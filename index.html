@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>빌리지베이비 랜덤런치 매칭 도구</title>
+<style>
+  :root{
+    --brand:#2D7CD2;
+    --brand-dark:#1E5A9E;
+    --brand-light:#EAF2FC;
+    --brand-lighter:#F5F9FE;
+    --ink:#1A2233;
+    --ink-sub:#5B6472;
+    --ink-mute:#8A93A3;
+    --line:#E2E7EF;
+    --bg:#F6F8FB;
+    --white:#FFFFFF;
+    --amber:#E8A23D;
+    --amber-bg:#FDF3E3;
+    --red:#D2502D;
+    --red-bg:#FBEAE4;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Pretendard','Malgun Gothic',sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    line-height:1.5;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding:28px 20px 60px;}
+  header.app-head{
+    background:var(--brand);
+    color:#fff;
+    border-radius:14px;
+    padding:22px 26px;
+    margin-bottom:22px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    flex-wrap:wrap;
+    gap:14px;
+  }
+  header.app-head h1{margin:0 0 4px;font-size:20px;font-weight:700;}
+  header.app-head p{margin:0;font-size:13px;opacity:.88;}
+  .head-stats{display:flex;gap:18px;}
+  .head-stat{text-align:right;}
+  .head-stat .n{font-size:22px;font-weight:700;}
+  .head-stat .l{font-size:11px;opacity:.85;}
+
+  .card{
+    background:var(--white);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:20px 22px;
+    margin-bottom:18px;
+  }
+  .card h2{
+    font-size:15px;
+    margin:0 0 14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:var(--ink);
+  }
+  .card h2 .num{
+    width:22px;height:22px;border-radius:50%;
+    background:var(--brand-light);color:var(--brand-dark);
+    font-size:12px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .sub{font-size:12.5px;color:var(--ink-sub);margin:-8px 0 16px;}
+
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field label{font-size:12px;color:var(--ink-sub);}
+  select,input[type=text],input[type=number],input[type=date]{
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:8px 10px;
+    font-size:13px;
+    color:var(--ink);
+    background:#fff;
+    font-family:inherit;
+  }
+  select:focus,input:focus{outline:2px solid var(--brand-light);border-color:var(--brand);}
+
+  button{
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink);
+    border-radius:8px;
+    padding:9px 16px;
+    font-size:13px;
+    cursor:pointer;
+    font-weight:600;
+    font-family:inherit;
+  }
+  button:hover{background:var(--brand-lighter);}
+  button.primary{
+    background:var(--brand);
+    border-color:var(--brand);
+    color:#fff;
+  }
+  button.primary:hover{background:var(--brand-dark);}
+  button.ghost{border-color:transparent;color:var(--ink-sub);padding:6px 10px;}
+  button.ghost:hover{background:var(--bg);}
+  button.danger{color:var(--red);}
+  button:disabled{opacity:.45;cursor:not-allowed;}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th{
+    text-align:left;color:var(--ink-sub);font-weight:600;
+    border-bottom:1px solid var(--line);padding:7px 8px;font-size:11.5px;
+  }
+  td{padding:7px 8px;border-bottom:1px solid #EEF1F6;}
+  tr:last-child td{border-bottom:none;}
+  .chip{
+    display:inline-block;padding:2px 8px;border-radius:20px;
+    font-size:11px;font-weight:600;background:var(--brand-light);color:var(--brand-dark);
+  }
+  .chip.mute{background:#F0F1F4;color:var(--ink-sub);}
+  .chip.senior{background:var(--amber-bg);color:#8A5A0E;}
+
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+
+  .group-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:6px;}
+  .group-card{
+    border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:var(--brand-lighter);
+  }
+  .group-card .gtitle{font-size:12px;font-weight:700;color:var(--brand-dark);margin-bottom:8px;display:flex;justify-content:space-between;}
+  .member{
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:12.5px;padding:5px 0;border-bottom:1px dashed #DCE5F2;
+  }
+  .member:last-child{border-bottom:none;}
+  .member .name{font-weight:600;}
+  .member .meta{font-size:11px;color:var(--ink-sub);}
+
+  .score-banner{
+    display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--ink-sub);
+    background:var(--bg);border-radius:8px;padding:10px 14px;margin:12px 0;
+  }
+  .score-banner b{color:var(--ink);}
+
+  textarea{
+    width:100%;min-height:170px;border:1px solid var(--line);border-radius:8px;
+    padding:12px;font-size:12.5px;font-family:inherit;color:var(--ink);resize:vertical;
+    background:#FAFBFD;line-height:1.6;
+  }
+
+  .empty{
+    text-align:center;padding:30px 10px;color:var(--ink-mute);font-size:13px;
+  }
+
+  .history-item{border:1px solid var(--line);border-radius:10px;margin-bottom:10px;overflow:hidden;}
+  .history-head{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:11px 14px;cursor:pointer;background:#fff;
+  }
+  .history-head:hover{background:var(--brand-lighter);}
+  .history-head .ht{font-size:13px;font-weight:600;}
+  .history-head .hs{font-size:11.5px;color:var(--ink-sub);}
+  .history-body{padding:0 14px 14px;display:none;}
+  .history-body.open{display:block;}
+
+  .badge-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;}
+
+  .modal-bg{
+    display:none;position:fixed;inset:0;background:rgba(20,26,38,.4);
+    align-items:center;justify-content:center;z-index:50;
+  }
+  .modal-bg.open{display:flex;}
+  .modal{background:#fff;border-radius:12px;padding:22px;width:380px;max-width:92vw;}
+  .modal h3{margin:0 0 14px;font-size:15px;}
+  .modal .row{margin-bottom:10px;}
+  .modal .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:var(--ink);color:#fff;padding:10px 18px;border-radius:8px;
+    font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99;
+  }
+  .toast.show{opacity:1;}
+
+  .loading-row{display:flex;align-items:center;gap:8px;color:var(--ink-sub);font-size:13px;padding:10px 0;}
+  .spin{width:14px;height:14px;border:2px solid var(--brand-light);border-top-color:var(--brand);border-radius:50%;animation:sp .7s linear infinite;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="app-head">
+    <div>
+      <h1>랜덤런치 매칭 도구</h1>
+      <p>타 조직 매칭 · 입사일 분산 · MBTI 다양성을 고려한 자동 그룹 편성</p>
+    </div>
+    <div class="head-stats">
+      <div class="head-stat"><div class="n" id="statTotal">-</div><div class="l">전체 인원</div></div>
+      <div class="head-stat"><div class="n" id="statTeams">-</div><div class="l">소속 팀 수</div></div>
+      <div class="head-stat"><div class="n" id="statRounds">-</div><div class="l">누적 회차</div></div>
+    </div>
+  </header>
+
+  <div class="card">
+    <h2><span class="num">1</span> 인원 명단</h2>
+    <p class="sub">2026년 7월 1일 기준 명단입니다. 입사/퇴사 인원이 생기면 여기서 직접 추가하거나 제외할 수 있어요.</p>
+    <div class="toolbar">
+      <div class="row" style="gap:8px;">
+        <span class="chip" id="rosterCountChip">-</span>
+        <span style="font-size:12px;color:var(--ink-sub);" id="teamBreakdown"></span>
+      </div>
+      <div class="row" style="gap:8px;">
+        <button class="ghost" onclick="toggleRosterTable()" id="rosterToggleBtn">명단 펼치기</button>
+        <button onclick="openAddPerson()">+ 인원 추가</button>
+      </div>
+    </div>
+    <div id="rosterTableWrap" style="display:none;margin-top:10px;max-height:340px;overflow:auto;">
+      <table>
+        <thead><tr><th>이름</th><th>팀</th><th>직무</th><th>MBTI</th><th>입사일</th><th>근속</th><th></th></tr></thead>
+        <tbody id="rosterBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span> 매칭 설정</h2>
+    <div class="row" style="margin-bottom:6px;">
+      <div class="field">
+        <label>회차 이름</label>
+        <input type="text" id="roundLabel" placeholder="예: 7월 1차" style="width:150px;">
+      </div>
+      <div class="field">
+        <label>식사 예정일</label>
+        <input type="date" id="roundDate">
+      </div>
+      <div class="field">
+        <label>그룹 수</label>
+        <input type="number" id="groupCount" min="2" max="15" style="width:80px;">
+      </div>
+      <div class="field">
+        <label>그룹당 인원</label>
+        <span id="sizePreview" class="chip mute" style="margin-top:6px;">-</span>
+      </div>
+      <div class="field">
+        <label>MBTI 다양성 고려</label>
+        <select id="mbtiToggle" style="width:90px;">
+          <option value="on">반영함</option>
+          <option value="off">반영안함</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>재매칭 제외 기간</label>
+        <select id="cooldownRounds" style="width:130px;">
+          <option value="1">최근 1회차</option>
+          <option value="2" selected>최근 2회차</option>
+          <option value="3">최근 3회차</option>
+          <option value="999">전체 이력</option>
+        </select>
+      </div>
+    </div>
+    <p class="sub" style="margin-top:10px;">같은 팀은 그룹당 최대 2명까지만 섞이고, 가급적 입사 1년 이상 시니어가 각 그룹에 1명 이상 포함되도록 자동 배정됩니다.</p>
+    <button class="primary" onclick="runMatching()">🎲 매칭 실행</button>
+    <span id="matchingLoading" class="loading-row" style="display:none;"><span class="spin"></span> 최적 조합을 계산하는 중...</span>
+  </div>
+
+  <div class="card" id="resultCard" style="display:none;">
+    <h2><span class="num">3</span> 매칭 결과</h2>
+    <div class="score-banner" id="scoreBanner"></div>
+    <div class="group-grid" id="groupGrid"></div>
+    <div class="row" style="margin-top:16px;gap:8px;">
+      <button class="primary" onclick="saveRound()">이 매칭 저장 (이력에 반영)</button>
+      <button onclick="runMatching()">다시 섞기</button>
+      <button onclick="buildAnnouncement()">공지문 생성</button>
+    </div>
+    <div id="announceBox" style="display:none;margin-top:14px;">
+      <div class="row" style="justify-content:space-between;margin-bottom:6px;">
+        <label style="font-size:12px;color:var(--ink-sub);">Slack 공지문 (복사해서 사용하세요)</label>
+        <button class="ghost" onclick="copyAnnounce()">복사하기</button>
+      </div>
+      <textarea id="announceText" readonly></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span> 매칭 이력</h2>
+    <p class="sub">저장된 회차는 다음 매칭에서 자동으로 중복을 피하는 데 사용됩니다.</p>
+    <div id="historyList"></div>
+  </div>
+
+</div>
+
+<div class="modal-bg" id="addModal">
+  <div class="modal">
+    <h3>인원 추가</h3>
+    <div class="row"><div class="field" style="flex:1;"><label>이름</label><input type="text" id="np_name" style="width:100%;"></div></div>
+    <div class="row"><div class="field" style="flex:1;"><label>팀</label><input type="text" id="np_team" placeholder="예: Product" style="width:100%;"></div></div>
+    <div class="row"><div class="field" style="flex:1;"><label>직무(Role)</label><input type="text" id="np_role" style="width:100%;"></div></div>
+    <div class="row">
+      <div class="field"><label>MBTI</label><input type="text" id="np_mbti" placeholder="선택" style="width:90px;"></div>
+      <div class="field"><label>입사일</label><input type="date" id="np_hire"></div>
+    </div>
+    <div class="actions">
+      <button class="ghost" onclick="closeAddPerson()">취소</button>
+      <button class="primary" onclick="addPerson()">추가</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ROSTER_KEY = 'lunch-roster-v1';
+const HISTORY_KEY = 'lunch-history-v1';
+
+const DEFAULT_ROSTER = [
+{name:'이지현',role:'CX',team:'Biz Team',mbti:'INTJ',hire:'2024-12-20'},
+{name:'정채영',role:'Finance',team:'Biz Team',mbti:'INFJ',hire:'2024-10-25'},
+{name:'정혜민',role:'HR',team:'Biz Team',mbti:'ISFJ',hire:'2021-10-18'},
+{name:'박나영',role:'Marketer',team:'Brand',mbti:'ISTP',hire:'2026-01-26'},
+{name:'안선우',role:'Designer',team:'Brand',mbti:'INFP',hire:'2024-07-29'},
+{name:'이서현',role:'MD',team:'Brand',mbti:'ENTJ',hire:'2025-03-06'},
+{name:'이우리',role:'Marketer',team:'Brand',mbti:'ENTP',hire:'2025-05-08'},
+{name:'임희선',role:'Designer',team:'Brand',mbti:'ISFJ',hire:'2022-03-07'},
+{name:'임희진',role:'MD',team:'Brand',mbti:'ESFP',hire:'2025-01-26'},
+{name:'이종민',role:'MD',team:'Brand',mbti:'ISTJ',hire:'2026-03-03'},
+{name:'이혜진',role:'CX',team:'Brand',mbti:'ESTP',hire:'2026-05-27'},
+{name:'김유리',role:'AMD',team:'Commerce',mbti:'INFJ',hire:'2025-11-26'},
+{name:'김태윤',role:'MD',team:'Commerce',mbti:'INFP',hire:'2025-09-17'},
+{name:'이소현',role:'MD',team:'Commerce',mbti:'ISFJ',hire:'2023-03-13'},
+{name:'조수민',role:'MD',team:'Commerce',mbti:'INTJ',hire:'2020-12-18'},
+{name:'박소영',role:'Marketer',team:'M&E',mbti:'',hire:'2019-08-12'},
+{name:'박고은',role:'Marketer',team:'M&E',mbti:'ENFP',hire:'2025-06-04'},
+{name:'김영웅',role:'Ad Sales Manager',team:'M&E',mbti:'',hire:'2026-07-01'},
+{name:'이혜린',role:'Designer',team:'M&E',mbti:'INTJ',hire:'2026-03-18'},
+{name:'이상화',role:'Support',team:'M&E',mbti:'',hire:'2026-06-22'},
+{name:'안영주',role:'UX Designer',team:'Product',mbti:'INFP',hire:'2025-11-17'},
+{name:'김다은',role:'Engineer',team:'Product',mbti:'ENFP',hire:'2022-01-10'},
+{name:'문혁은',role:'Engineer',team:'Product',mbti:'INTP',hire:'2020-12-18'},
+{name:'유진수',role:'Engineer',team:'Product',mbti:'ESTJ',hire:'2025-02-17'},
+{name:'임소정',role:'Engineer',team:'Product',mbti:'ISFP',hire:'2024-01-29'},
+{name:'정수형',role:'Engineer',team:'Product',mbti:'ESTP',hire:'2023-12-04'},
+{name:'최제혁',role:'Engineer',team:'Product',mbti:'INFP',hire:'2021-11-08'},
+{name:'윤진한',role:'PO',team:'Product',mbti:'ISTJ',hire:'2025-02-24'},
+{name:'윤혜준',role:'Staff - QA',team:'Product',mbti:'ENFP',hire:'2024-12-01'},
+{name:'안연주',role:'Marketer',team:'GA',mbti:'ENFP',hire:'2026-04-20'}
+];
+
+let roster = [];
+let history = [];
+let currentGroups = null;
+let currentScore = null;
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+async function loadData(){
+  try{
+    const r = await window.storage.get(ROSTER_KEY, false);
+    roster = JSON.parse(r.value);
+  }catch(e){
+    roster = DEFAULT_ROSTER.map(p=>({...p}));
+    await window.storage.set(ROSTER_KEY, JSON.stringify(roster), false);
+  }
+  try{
+    const h = await window.storage.get(HISTORY_KEY, false);
+    history = JSON.parse(h.value);
+  }catch(e){
+    history = [];
+  }
+  renderAll();
+}
+
+async function persistRoster(){
+  await window.storage.set(ROSTER_KEY, JSON.stringify(roster), false);
+}
+async function persistHistory(){
+  await window.storage.set(HISTORY_KEY, JSON.stringify(history), false);
+}
+
+function tenureYears(hire){
+  const d = new Date(hire);
+  const now = new Date();
+  return (now - d) / (1000*60*60*24*365.25);
+}
+function isSenior(hire){ return tenureYears(hire) >= 1; }
+
+function renderAll(){
+  document.getElementById('statTotal').textContent = roster.length;
+  const teams = [...new Set(roster.map(p=>p.team))];
+  document.getElementById('statTeams').textContent = teams.length;
+  document.getElementById('statRounds').textContent = history.length;
+  document.getElementById('rosterCountChip').textContent = roster.length + '명';
+
+  const teamCounts = {};
+  roster.forEach(p=>{teamCounts[p.team]=(teamCounts[p.team]||0)+1;});
+  document.getElementById('teamBreakdown').textContent = Object.entries(teamCounts).map(([t,c])=>`${t} ${c}`).join(' · ');
+
+  const defaultGroups = Math.max(2, Math.round(roster.length / 4.5));
+  const gc = document.getElementById('groupCount');
+  if(!gc.value) gc.value = defaultGroups;
+  updateSizePreview();
+
+  const tbody = document.getElementById('rosterBody');
+  tbody.innerHTML='';
+  roster.slice().sort((a,b)=>a.team.localeCompare(b.team)).forEach((p,idx)=>{
+    const realIdx = roster.indexOf(p);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${p.name}</td><td>${p.team}</td><td>${p.role||''}</td><td>${p.mbti||'-'}</td><td>${p.hire}</td><td>${isSenior(p.hire)?'<span class="chip senior">시니어</span>':'<span class="chip mute">주니어</span>'}</td><td><button class="ghost danger" onclick="removePerson(${realIdx})">삭제</button></td>`;
+    tbody.appendChild(tr);
+  });
+
+  renderHistory();
+
+  if(!document.getElementById('roundLabel').value){
+    const now = new Date();
+    document.getElementById('roundLabel').value = `${now.getMonth()+1}월 ${history.length%2===0?'1':'2'}차`;
+  }
+}
+
+function toggleRosterTable(){
+  const wrap = document.getElementById('rosterTableWrap');
+  const btn = document.getElementById('rosterToggleBtn');
+  const open = wrap.style.display!=='none';
+  wrap.style.display = open ? 'none':'block';
+  btn.textContent = open ? '명단 펼치기' : '명단 접기';
+}
+
+function updateSizePreview(){
+  const n = roster.length;
+  const groups = parseInt(document.getElementById('groupCount').value || 6);
+  if(groups<1){ document.getElementById('sizePreview').textContent='-'; return; }
+  const base = Math.floor(n/groups);
+  const rem = n - base*groups;
+  const sizes = [];
+  for(let i=0;i<groups;i++) sizes.push(i<rem ? base+1 : base);
+  const uniq = [...new Set(sizes)].sort((a,b)=>b-a);
+  document.getElementById('sizePreview').textContent = uniq.join('/')+'명 그룹 × '+groups;
+}
+document.getElementById('groupCount').addEventListener('input', updateSizePreview);
+
+function openAddPerson(){ document.getElementById('addModal').classList.add('open'); }
+function closeAddPerson(){ document.getElementById('addModal').classList.remove('open'); }
+async function addPerson(){
+  const name = document.getElementById('np_name').value.trim();
+  const team = document.getElementById('np_team').value.trim();
+  const role = document.getElementById('np_role').value.trim();
+  const mbti = document.getElementById('np_mbti').value.trim().toUpperCase();
+  const hire = document.getElementById('np_hire').value;
+  if(!name || !team || !hire){ toast('이름, 팀, 입사일은 필수입니다'); return; }
+  roster.push({name,team,role,mbti,hire});
+  await persistRoster();
+  closeAddPerson();
+  ['np_name','np_team','np_role','np_mbti','np_hire'].forEach(id=>document.getElementById(id).value='');
+  renderAll();
+  toast(name+'님이 명단에 추가되었습니다');
+}
+async function removePerson(idx){
+  const p = roster[idx];
+  if(!confirm(p.name+'님을 명단에서 삭제할까요?')) return;
+  roster.splice(idx,1);
+  await persistRoster();
+  renderAll();
+  toast('삭제되었습니다');
+}
+
+function recentPairSet(cooldown){
+  const pairs = new Set();
+  const rounds = cooldown >= 999 ? history : history.slice(-cooldown);
+  rounds.forEach(round=>{
+    round.groups.forEach(g=>{
+      for(let i=0;i<g.length;i++){
+        for(let j=i+1;j<g.length;j++){
+          const key = [g[i],g[j]].sort().join('|');
+          pairs.add(key);
+        }
+      }
+    });
+  });
+  return pairs;
+}
+
+function mbtiDistance(a,b){
+  if(!a || !b) return 0;
+  let d=0;
+  for(let i=0;i<4;i++) if(a[i]!==b[i]) d++;
+  return d;
+}
+
+function evaluateGroups(groups, peopleByName, recentPairs, mbtiOn){
+  let penalty = 0;
+  let repeatHits = 0;
+  let teamViolations = 0;
+  groups.forEach(g=>{
+    const teamCount = {};
+    let seniorCount = 0;
+    let mbtiPairScore = 0;
+    let mbtiPairs = 0;
+    for(let i=0;i<g.length;i++){
+      const pi = peopleByName[g[i]];
+      teamCount[pi.team] = (teamCount[pi.team]||0)+1;
+      if(isSenior(pi.hire)) seniorCount++;
+      for(let j=i+1;j<g.length;j++){
+        const pj = peopleByName[g[j]];
+        const key = [g[i],g[j]].sort().join('|');
+        if(recentPairs.has(key)){ penalty += 100; repeatHits++; }
+        if(mbtiOn && pi.mbti && pj.mbti){
+          mbtiPairScore += mbtiDistance(pi.mbti,pj.mbti);
+          mbtiPairs++;
+        }
+      }
+    }
+    Object.values(teamCount).forEach(c=>{
+      if(c>2){ penalty += (c-2)*40; teamViolations++; }
+    });
+    if(seniorCount===0) penalty += 15;
+    if(mbtiOn && mbtiPairs>0){
+      const avgDist = mbtiPairScore/mbtiPairs;
+      penalty += (4-avgDist)*3;
+    }
+  });
+  return {penalty, repeatHits, teamViolations};
+}
+
+function splitSizes(n, groups){
+  const base = Math.floor(n/groups);
+  const rem = n - base*groups;
+  const sizes = [];
+  for(let i=0;i<groups;i++) sizes.push(i<rem ? base+1 : base);
+  return sizes;
+}
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+async function runMatching(){
+  const loading = document.getElementById('matchingLoading');
+  loading.style.display='flex';
+  await new Promise(r=>setTimeout(r,30));
+
+  const names = roster.map(p=>p.name);
+  const peopleByName = {};
+  roster.forEach(p=>peopleByName[p.name]=p);
+  const groupCount = Math.max(2, parseInt(document.getElementById('groupCount').value||6));
+  const sizes = splitSizes(names.length, groupCount);
+  const cooldown = parseInt(document.getElementById('cooldownRounds').value);
+  const mbtiOn = document.getElementById('mbtiToggle').value === 'on';
+  const recentPairs = recentPairSet(cooldown);
+
+  let best = null;
+  const TRIES = 400;
+  for(let t=0;t<TRIES;t++){
+    const shuffled = shuffle(names);
+    const groups = [];
+    let cursor = 0;
+    sizes.forEach(sz=>{
+      groups.push(shuffled.slice(cursor,cursor+sz));
+      cursor += sz;
+    });
+    const ev = evaluateGroups(groups, peopleByName, recentPairs, mbtiOn);
+    if(!best || ev.penalty < best.score.penalty){
+      best = {groups, score: ev};
+    }
+    if(best.score.penalty===0 && t>50) break;
+  }
+
+  currentGroups = best.groups;
+  currentScore = best.score;
+  loading.style.display='none';
+  renderResult(peopleByName);
+}
+
+function renderResult(peopleByName){
+  document.getElementById('resultCard').style.display='block';
+  document.getElementById('announceBox').style.display='none';
+
+  const banner = document.getElementById('scoreBanner');
+  banner.innerHTML = `
+    <span><b>${currentGroups.length}개</b> 그룹 편성</span>
+    <span>팀 중복 위반 <b>${currentScore.teamViolations}건</b></span>
+    <span>최근 이력 재매칭 <b>${currentScore.repeatHits}건</b></span>
+  `;
+
+  const grid = document.getElementById('groupGrid');
+  grid.innerHTML='';
+  const labels = ['A조','B조','C조','D조','E조','F조','G조','H조','I조','J조','K조','L조','M조','N조','O조'];
+  currentGroups.forEach((g, idx)=>{
+    const div = document.createElement('div');
+    div.className='group-card';
+    const teams = [...new Set(g.map(n=>peopleByName[n].team))];
+    div.innerHTML = `<div class="gtitle"><span>${labels[idx]||('그룹'+(idx+1))} (${g.length}명)</span><span style="color:var(--ink-sub);font-weight:500;">${teams.length}개 팀</span></div>` +
+      g.map(n=>{
+        const p = peopleByName[n];
+        return `<div class="member"><span class="name">${p.name}</span><span class="meta">${p.team} · ${p.mbti||'-'}${isSenior(p.hire)?' · 시니어':''}</span></div>`;
+      }).join('');
+    grid.appendChild(div);
+  });
+  document.getElementById('resultCard').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+async function saveRound(){
+  if(!currentGroups){ toast('먼저 매칭을 실행해주세요'); return; }
+  const label = document.getElementById('roundLabel').value || ('회차 '+(history.length+1));
+  const date = document.getElementById('roundDate').value || '';
+  history.push({
+    label, date,
+    createdAt: new Date().toISOString(),
+    groups: currentGroups
+  });
+  await persistHistory();
+  toast(label+' 매칭이 이력에 저장되었습니다');
+  document.getElementById('roundLabel').value='';
+  document.getElementById('roundDate').value='';
+  renderAll();
+}
+
+function buildAnnouncement(){
+  if(!currentGroups) return;
+  const peopleByName = {};
+  roster.forEach(p=>peopleByName[p.name]=p);
+  const labels = ['A조','B조','C조','D조','E조','F조','G조','H조','I조','J조','K조','L조','M조','N조','O조'];
+  const label = document.getElementById('roundLabel').value || '랜덤런치';
+  const date = document.getElementById('roundDate').value;
+  let txt = `🍽️ ${label} 랜덤런치 조 안내\n\n`;
+  currentGroups.forEach((g,idx)=>{
+    const names = g.map(n=>`${n}(${peopleByName[n].team})`).join(' · ');
+    txt += `${labels[idx]||('그룹'+(idx+1))}: ${names}\n`;
+  });
+  txt += `\n일정은 각 조에서 자율 조율 부탁드립니다${date?` (식사 권장 기간: ${date} 전후)`:''}.\n`;
+  txt += `식대는 1인 15,000원 한도이며, 영수증은 정산 채널로 제출해주세요.\n`;
+  txt += `즐거운 시간 되세요!`;
+  document.getElementById('announceText').value = txt;
+  document.getElementById('announceBox').style.display='block';
+}
+
+function copyAnnounce(){
+  const ta = document.getElementById('announceText');
+  ta.select();
+  document.execCommand('copy');
+  toast('공지문이 복사되었습니다');
+}
+
+function renderHistory(){
+  const wrap = document.getElementById('historyList');
+  if(history.length===0){
+    wrap.innerHTML = '<div class="empty">아직 저장된 매칭 이력이 없습니다. 매칭을 실행하고 저장해보세요.</div>';
+    return;
+  }
+  wrap.innerHTML='';
+  history.slice().reverse().forEach((round, ri)=>{
+    const realIdx = history.length-1-ri;
+    const item = document.createElement('div');
+    item.className='history-item';
+    const labels = ['A조','B조','C조','D조','E조','F조','G조','H조','I조','J조','K조','L조','M조','N조','O조'];
+    item.innerHTML = `
+      <div class="history-head" onclick="toggleHistory(${ri})">
+        <div>
+          <div class="ht">${round.label}</div>
+          <div class="hs">${round.date||'일정 미정'} · ${round.groups.length}개 그룹</div>
+        </div>
+        <div class="row" style="gap:6px;">
+          <button class="ghost danger" onclick="event.stopPropagation();deleteRound(${realIdx})">삭제</button>
+          <span style="color:var(--ink-mute);">▾</span>
+        </div>
+      </div>
+      <div class="history-body" id="hbody-${ri}">
+        ${round.groups.map((g,gi)=>`<div style="margin-top:8px;"><b style="font-size:12px;">${labels[gi]||('그룹'+(gi+1))}</b><div class="badge-row">${g.map(n=>`<span class="chip mute">${n}</span>`).join('')}</div></div>`).join('')}
+      </div>
+    `;
+    wrap.appendChild(item);
+  });
+}
+
+function toggleHistory(ri){
+  const body = document.getElementById('hbody-'+ri);
+  body.classList.toggle('open');
+}
+
+async function deleteRound(idx){
+  if(!confirm('이 회차 기록을 삭제할까요? 삭제하면 다음 매칭 시 중복 방지에 반영되지 않습니다.')) return;
+  history.splice(idx,1);
+  await persistHistory();
+  renderAll();
+  toast('회차 기록이 삭제되었습니다');
+}
+
+loadData();
+</script>
+</body>
+</html>
