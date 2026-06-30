@@ -361,15 +361,16 @@ function toast(msg){
 
 async function loadData(){
   try{
-    const r = await window.storage.get(ROSTER_KEY, false);
-    roster = JSON.parse(r.value);
+    const saved = localStorage.getItem(ROSTER_KEY);
+    if(!saved) throw new Error('no roster yet');
+    roster = JSON.parse(saved);
   }catch(e){
     roster = DEFAULT_ROSTER.map(p=>({...p}));
-    await window.storage.set(ROSTER_KEY, JSON.stringify(roster), false);
+    localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
   }
   try{
-    const h = await window.storage.get(HISTORY_KEY, false);
-    history = JSON.parse(h.value);
+    const savedH = localStorage.getItem(HISTORY_KEY);
+    history = savedH ? JSON.parse(savedH) : [];
   }catch(e){
     history = [];
   }
@@ -377,10 +378,10 @@ async function loadData(){
 }
 
 async function persistRoster(){
-  await window.storage.set(ROSTER_KEY, JSON.stringify(roster), false);
+  localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
 }
 async function persistHistory(){
-  await window.storage.set(HISTORY_KEY, JSON.stringify(history), false);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
 }
 
 function tenureYears(hire){
