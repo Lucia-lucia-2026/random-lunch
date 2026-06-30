@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow, noarchive">
 <title>빌리지베이비 랜덤런치 매칭 도구</title>
 <style>
   :root{
@@ -196,10 +197,26 @@
     <div style="width:48px;height:48px;border-radius:50%;background:#EAF2FC;color:#1E5A9E;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:20px;">🔒</div>
     <h2 id="lockTitle" style="font-size:16px;margin:0 0 6px;color:#1A2233;">관리자 페이지</h2>
     <p id="lockSub" style="font-size:12.5px;color:#5B6472;margin:0 0 16px;">비밀번호를 입력해주세요</p>
-    <input type="password" id="lockPw" placeholder="비밀번호" style="width:100%;border:1px solid #E2E7EF;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:8px;box-sizing:border-box;">
-    <input type="password" id="lockPw2" placeholder="비밀번호 확인" style="display:none;width:100%;border:1px solid #E2E7EF;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:8px;box-sizing:border-box;">
-    <button id="lockBtn" style="width:100%;background:#2D7CD2;border:1px solid #2D7CD2;color:#fff;border-radius:8px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;">확인</button>
-    <p id="lockErr" style="font-size:12px;color:#D2502D;margin:10px 0 0;display:none;">비밀번호가 올바르지 않습니다</p>
+
+    <div id="lockStepMain">
+      <input type="password" id="lockPw" placeholder="비밀번호" style="width:100%;border:1px solid #E2E7EF;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:8px;box-sizing:border-box;">
+      <input type="password" id="lockPw2" placeholder="비밀번호 확인" style="display:none;width:100%;border:1px solid #E2E7EF;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:8px;box-sizing:border-box;">
+      <input type="text" id="lockQ" placeholder="복구 질문 (예: 첫 반려동물 이름은?)" style="display:none;width:100%;border:1px solid #E2E7EF;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:8px;box-sizing:border-box;">
+      <input type="text" id="lockA" placeholder="질문에 대한 답" style="display:none;width:100%;border:1px solid #E2E7EF;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:8px;box-sizing:border-box;">
+      <button id="lockBtn" style="width:100%;background:#2D7CD2;border:1px solid #2D7CD2;color:#fff;border-radius:8px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;">확인</button>
+      <p id="lockErr" style="font-size:12px;color:#D2502D;margin:10px 0 0;display:none;">비밀번호가 올바르지 않습니다</p>
+      <p id="forgotLink" style="font-size:12px;color:#5B6472;margin:14px 0 0;cursor:pointer;text-decoration:underline;display:none;">비밀번호를 잊으셨나요?</p>
+    </div>
+
+    <div id="lockStepRecover" style="display:none;">
+      <p id="recoverQDisplay" style="font-size:13px;color:#1A2233;margin:0 0 10px;font-weight:600;"></p>
+      <input type="text" id="recoverAnswer" placeholder="답 입력" style="width:100%;border:1px solid #E2E7EF;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:8px;box-sizing:border-box;">
+      <input type="password" id="recoverNewPw" placeholder="새 비밀번호" style="display:none;width:100%;border:1px solid #E2E7EF;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:8px;box-sizing:border-box;">
+      <input type="password" id="recoverNewPw2" placeholder="새 비밀번호 확인" style="display:none;width:100%;border:1px solid #E2E7EF;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:8px;box-sizing:border-box;">
+      <button id="recoverBtn" style="width:100%;background:#2D7CD2;border:1px solid #2D7CD2;color:#fff;border-radius:8px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;">확인</button>
+      <p id="recoverErr" style="font-size:12px;color:#D2502D;margin:10px 0 0;display:none;">답이 올바르지 않습니다</p>
+      <p id="backToLogin" style="font-size:12px;color:#5B6472;margin:14px 0 0;cursor:pointer;text-decoration:underline;">로그인 화면으로 돌아가기</p>
+    </div>
   </div>
 </div>
 
@@ -711,10 +728,12 @@ async function deleteRound(idx){
 }
 
 const PW_KEY = 'lunch-admin-pw-hash';
+const Q_KEY = 'lunch-admin-recovery-q';
+const A_KEY = 'lunch-admin-recovery-a-hash';
 const UNLOCK_KEY = 'lunch-admin-unlocked';
 
 async function sha256(text){
-  const enc = new TextEncoder().encode(text);
+  const enc = new TextEncoder().encode(text.trim().toLowerCase());
   const buf = await crypto.subtle.digest('SHA-256', enc);
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
@@ -727,25 +746,38 @@ async function initLock(){
   const titleEl = document.getElementById('lockTitle');
   const subEl = document.getElementById('lockSub');
   const pw2 = document.getElementById('lockPw2');
+  const qInput = document.getElementById('lockQ');
+  const aInput = document.getElementById('lockA');
   const btn = document.getElementById('lockBtn');
   const errEl = document.getElementById('lockErr');
   const pwInput = document.getElementById('lockPw');
+  const forgotLink = document.getElementById('forgotLink');
 
   if(!hasPw){
     titleEl.textContent = '관리자 비밀번호 설정';
-    subEl.textContent = '처음 접속하셨네요. 사용할 비밀번호를 정해주세요.';
+    subEl.textContent = '처음 접속하셨네요. 비밀번호와 복구용 질문을 정해주세요.';
     pw2.style.display = 'block';
+    qInput.style.display = 'block';
+    aInput.style.display = 'block';
     btn.onclick = async ()=>{
       const p1 = pwInput.value;
       const p2 = pw2.value;
-      if(p1.length < 4){ errEl.textContent='4자 이상 입력해주세요'; errEl.style.display='block'; return; }
+      const q = qInput.value.trim();
+      const a = aInput.value.trim();
+      if(p1.length < 4){ errEl.textContent='비밀번호는 4자 이상 입력해주세요'; errEl.style.display='block'; return; }
       if(p1 !== p2){ errEl.textContent='두 비밀번호가 일치하지 않습니다'; errEl.style.display='block'; return; }
+      if(!q || !a){ errEl.textContent='복구 질문과 답을 모두 입력해주세요'; errEl.style.display='block'; return; }
       const hash = await sha256(p1);
+      const aHash = await sha256(a);
       localStorage.setItem(PW_KEY, hash);
+      localStorage.setItem(Q_KEY, q);
+      localStorage.setItem(A_KEY, aHash);
       sessionStorage.setItem(UNLOCK_KEY, '1');
       unlockApp();
     };
   } else {
+    forgotLink.style.display = 'block';
+    forgotLink.onclick = showRecoverStep;
     btn.onclick = async ()=>{
       const hash = await sha256(pwInput.value);
       if(hash === hasPw){
@@ -759,6 +791,50 @@ async function initLock(){
   }
   pwInput.addEventListener('keydown', e=>{ if(e.key==='Enter') btn.onclick(); });
   pw2.addEventListener('keydown', e=>{ if(e.key==='Enter') btn.onclick(); });
+}
+
+function showRecoverStep(){
+  document.getElementById('lockStepMain').style.display='none';
+  document.getElementById('lockStepRecover').style.display='block';
+  document.getElementById('lockSub').textContent = '복구 질문에 답해주세요';
+  const q = localStorage.getItem(Q_KEY) || '복구 질문이 설정되어 있지 않습니다';
+  document.getElementById('recoverQDisplay').textContent = q;
+
+  const answerInput = document.getElementById('recoverAnswer');
+  const newPw = document.getElementById('recoverNewPw');
+  const newPw2 = document.getElementById('recoverNewPw2');
+  const recoverBtn = document.getElementById('recoverBtn');
+  const recoverErr = document.getElementById('recoverErr');
+  let answerVerified = false;
+
+  recoverBtn.onclick = async ()=>{
+    if(!answerVerified){
+      const hash = await sha256(answerInput.value);
+      const storedHash = localStorage.getItem(A_KEY);
+      if(!storedHash || hash !== storedHash){
+        recoverErr.textContent = '답이 올바르지 않습니다';
+        recoverErr.style.display = 'block';
+        return;
+      }
+      recoverErr.style.display = 'none';
+      answerVerified = true;
+      answerInput.style.display = 'none';
+      newPw.style.display = 'block';
+      newPw2.style.display = 'block';
+      document.getElementById('lockSub').textContent = '새 비밀번호를 설정해주세요';
+      recoverBtn.textContent = '비밀번호 변경';
+      return;
+    }
+    const p1 = newPw.value;
+    const p2 = newPw2.value;
+    if(p1.length < 4){ recoverErr.textContent='비밀번호는 4자 이상 입력해주세요'; recoverErr.style.display='block'; return; }
+    if(p1 !== p2){ recoverErr.textContent='두 비밀번호가 일치하지 않습니다'; recoverErr.style.display='block'; return; }
+    const newHash = await sha256(p1);
+    localStorage.setItem(PW_KEY, newHash);
+    sessionStorage.setItem(UNLOCK_KEY, '1');
+    unlockApp();
+  };
+  document.getElementById('backToLogin').onclick = ()=>location.reload();
 }
 
 function unlockApp(){
