@@ -726,7 +726,7 @@ function buildAnnouncement(){
   txt += `• 정산 : 식사 후 고위드(GoWithd)에 [시에스타런치] 항목으로 기록해주세요\n`;
   txt += `• 인증 : 다 같이 찍은 사진 한 장을 #siesta-lunch 채널에 올려주세요 📸\n\n`;
   txt += `처음엔 어색해도 괜찮아요. 밥 먹으면서 나누는 이야기가 우리를 더 가깝게 만들어줄 거예요 😊\n`;
-  txt += `맛있는 시간 보내세요, 빌리지베이비 팀 여러분! 🧡`;
+  txt += `맛있는 시간 보내세요, 빌베인 여러분! 🧡`;
 
   document.getElementById('announceText').value = txt;
   document.getElementById('announceBox').style.display='block';
@@ -757,11 +757,11 @@ function generateImage(){
   const ctx = canvas.getContext('2d');
 
   // Background
-  ctx.fillStyle = '#FFF8F5';
+  ctx.fillStyle = '#F5F9FE';
   ctx.fillRect(0, 0, W, H);
 
   // Top accent bar
-  ctx.fillStyle = '#E85D3A';
+  ctx.fillStyle = '#2D7CD2';
   ctx.fillRect(0, 0, W, 6);
 
   // Header section
@@ -771,10 +771,10 @@ function generateImage(){
   // Badge
   const badgeX = CARD_PAD;
   const badgeY = 24;
-  ctx.fillStyle = '#FDE8E3';
+  ctx.fillStyle = '#EAF2FC';
   roundRect(ctx, badgeX, badgeY, 170, 26, 13);
   ctx.fill();
-  ctx.fillStyle = '#E85D3A';
+  ctx.fillStyle = '#2D7CD2';
   ctx.font = 'bold 11px sans-serif';
   ctx.fillText('🌱  NEW · 컬처 프로그램', badgeX + 12, badgeY + 17);
 
@@ -789,12 +789,12 @@ function generateImage(){
   ctx.fillText(`'친해지기를 바라!' 문화 · ${label}`, CARD_PAD, 118);
 
   // Round label chip
-  ctx.fillStyle = '#E85D3A';
+  ctx.fillStyle = '#2D7CD2';
   ctx.font = 'bold 13px sans-serif';
   ctx.fillText(label, W - CARD_PAD - ctx.measureText(label).width, 118);
 
   // Divider
-  ctx.strokeStyle = '#F0E8E4';
+  ctx.strokeStyle = '#D6E8F8';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(CARD_PAD, HEADER_H - 10);
@@ -812,7 +812,7 @@ function generateImage(){
   const infoW = (W - CARD_PAD * 2 - 12 * 3) / 4;
   infos.forEach((info, i) => {
     const ix = CARD_PAD + i * (infoW + 12);
-    ctx.fillStyle = '#FDE8E3';
+    ctx.fillStyle = '#EAF2FC';
     roundRect(ctx, ix, infoY, infoW, 100, 10);
     ctx.fill();
     ctx.fillStyle = '#5B6472';
@@ -828,10 +828,10 @@ function generateImage(){
 
   // Principle banner
   const pinY = infoY + 110;
-  ctx.fillStyle = '#FFF3F0';
+  ctx.fillStyle = '#EAF2FC';
   roundRect(ctx, CARD_PAD, pinY, W - CARD_PAD * 2, 30, 8);
   ctx.fill();
-  ctx.fillStyle = '#E85D3A';
+  ctx.fillStyle = '#2D7CD2';
   ctx.font = 'bold 12px sans-serif';
   ctx.fillText('📌  조 편성 원칙', CARD_PAD + 12, pinY + 20);
   ctx.fillStyle = '#5B6472';
@@ -844,7 +844,7 @@ function generateImage(){
   ctx.font = 'bold 15px sans-serif';
   ctx.fillText('🎉 이번 달 조 편성', CARD_PAD, groupsStart);
   if(dateStr){
-    ctx.fillStyle = '#E85D3A';
+    ctx.fillStyle = '#2D7CD2';
     ctx.font = '12px sans-serif';
     ctx.fillText(`식사 기간: ${dateStr} 전후`, W - CARD_PAD - 150, groupsStart);
   }
@@ -855,13 +855,13 @@ function generateImage(){
     ctx.fillStyle = '#FFFFFF';
     roundRect(ctx, CARD_PAD, gy, W - CARD_PAD * 2, GROUP_H, 10);
     ctx.fill();
-    ctx.strokeStyle = '#F0E8E4';
+    ctx.strokeStyle = '#D6E8F8';
     ctx.lineWidth = 1;
     roundRect(ctx, CARD_PAD, gy, W - CARD_PAD * 2, GROUP_H, 10);
     ctx.stroke();
 
     // Label badge
-    ctx.fillStyle = '#E85D3A';
+    ctx.fillStyle = '#2D7CD2';
     roundRect(ctx, CARD_PAD + 10, gy + 14, 36, 22, 6);
     ctx.fill();
     ctx.fillStyle = '#FFFFFF';
@@ -879,7 +879,7 @@ function generateImage(){
 
   // Footer
   const footerY = H - FOOTER_H;
-  ctx.fillStyle = '#E85D3A';
+  ctx.fillStyle = '#2D7CD2';
   ctx.fillRect(0, footerY, W, 3);
   ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(0, footerY + 3, W, FOOTER_H - 3);
@@ -891,9 +891,9 @@ function generateImage(){
   ctx.fillStyle = '#8A93A3';
   ctx.font = '11px sans-serif';
   ctx.fillText('정산: 고위드(GoWithd) → [시에스타런치] 항목으로 기록', W/2, footerY + 46);
-  ctx.fillStyle = '#E85D3A';
+  ctx.fillStyle = '#2D7CD2';
   ctx.font = 'bold 12px sans-serif';
-  ctx.fillText('빌리지베이비 🧡', W/2, footerY + 64);
+  ctx.fillText('빌베인 여러분 🧡', W/2, footerY + 64);
   ctx.textAlign = 'left';
 
   // Download
