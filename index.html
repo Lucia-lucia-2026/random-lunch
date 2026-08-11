@@ -723,7 +723,7 @@ function buildAnnouncement(){
   txt += `• 시간 : 최대 2시간 (점심 시간 내)\n`;
   txt += `• 출근 : 해당일은 오피스 근무 필수예요 🏢\n`;
   txt += `• 식대 : 1인 최대 20,000원\n`;
-  txt += `• 정산 : 식사 후 고위드(GoWithd)에 [시에스타런치] 항목으로 기록해주세요\n`;
+  txt += `• 정산 : 식사 후 법인카드 사용 내역을 고위드(gowid)에 [시에스타 런치]라고 기재해주세요\n`;
   txt += `• 인증 : 다 같이 찍은 사진 한 장을 #siesta-lunch 채널에 올려주세요 📸\n\n`;
   txt += `처음엔 어색해도 괜찮아요. 밥 먹으면서 나누는 이야기가 우리를 더 가깝게 만들어줄 거예요 😊\n`;
   txt += `맛있는 시간 보내세요, 빌베인 여러분! 🧡`;
@@ -742,13 +742,16 @@ function generateImage(){
   const dateStr = date ? (() => { const d=new Date(date); return `${d.getMonth()+1}월 ${d.getDate()}일`; })() : '';
 
   const W = 800;
-  const CARD_PAD = 28;
-  const GROUP_H = 52;
-  const INFO_H = 130;
-  const HEADER_H = 170;
-  const FOOTER_H = 80;
-  const GROUPS_H = currentGroups.length * (GROUP_H + 10) + 20;
-  const H = HEADER_H + INFO_H + GROUPS_H + FOOTER_H + 60;
+  const PAD = 28;
+  const HEADER_H = 160;   // 배지+제목+구분선
+  const INFO_H   = 120;   // 정보카드 4개
+  const PRIN_H   = 52;    // 조편성원칙 배너 (여백 포함)
+  const GTITLE_H = 36;    // "이번 달 조 편성" 타이틀
+  const GROUP_H  = 54;    // 그룹 카드 하나 높이
+  const GROUP_GAP = 10;
+  const FOOTER_H = 90;
+  const GROUPS_BLOCK = currentGroups.length * (GROUP_H + GROUP_GAP);
+  const H = HEADER_H + INFO_H + PRIN_H + GTITLE_H + GROUPS_BLOCK + FOOTER_H + 20;
 
   const canvas = document.getElementById('announceCanvas');
   canvas.width = W;
@@ -756,147 +759,130 @@ function generateImage(){
   canvas.style.display = 'none';
   const ctx = canvas.getContext('2d');
 
-  // Background
+  // ── 배경
   ctx.fillStyle = '#F5F9FE';
   ctx.fillRect(0, 0, W, H);
 
-  // Top accent bar
+  // ── 상단 강조 바
   ctx.fillStyle = '#2D7CD2';
   ctx.fillRect(0, 0, W, 6);
 
-  // Header section
+  // ── 헤더 흰 배경
   ctx.fillStyle = '#FFFFFF';
-  ctx.fillRect(0, 6, W, HEADER_H);
+  ctx.fillRect(0, 6, W, HEADER_H - 6);
 
-  // Badge
-  const badgeX = CARD_PAD;
-  const badgeY = 24;
+  // ── 배지
+  const badgeY = 20;
   ctx.fillStyle = '#EAF2FC';
-  roundRect(ctx, badgeX, badgeY, 170, 26, 13);
-  ctx.fill();
+  roundRect(ctx, PAD, badgeY, 178, 26, 13); ctx.fill();
   ctx.fillStyle = '#2D7CD2';
   ctx.font = 'bold 11px sans-serif';
-  ctx.fillText('🌱  NEW · 컬처 프로그램', badgeX + 12, badgeY + 17);
+  ctx.fillText('🌱  NEW · 컬처 프로그램', PAD + 12, badgeY + 17);
 
-  // Title
+  // ── 제목
   ctx.fillStyle = '#1A2233';
-  ctx.font = 'bold 32px sans-serif';
-  ctx.fillText('🍱 Siesta Lunch', CARD_PAD, 92);
+  ctx.font = 'bold 30px sans-serif';
+  ctx.fillText('🍱 Siesta Lunch', PAD, 82);
 
-  // Subtitle
+  // ── 서브타이틀 + 회차 칩
   ctx.fillStyle = '#5B6472';
-  ctx.font = '14px sans-serif';
-  ctx.fillText(`'친해지기를 바라!' 문화 · ${label}`, CARD_PAD, 118);
-
-  // Round label chip
+  ctx.font = '13px sans-serif';
+  ctx.fillText(`'친해지기를 바라!' 문화 · ${label}`, PAD, 106);
   ctx.fillStyle = '#2D7CD2';
   ctx.font = 'bold 13px sans-serif';
-  ctx.fillText(label, W - CARD_PAD - ctx.measureText(label).width, 118);
+  const chipW = ctx.measureText(label).width + 20;
+  roundRect(ctx, W - PAD - chipW, 90, chipW, 22, 11); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, W - PAD - chipW/2, 105);
+  ctx.textAlign = 'left';
 
-  // Divider
-  ctx.strokeStyle = '#D6E8F8';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(CARD_PAD, HEADER_H - 10);
-  ctx.lineTo(W - CARD_PAD, HEADER_H - 10);
-  ctx.stroke();
+  // ── 구분선
+  ctx.strokeStyle = '#D6E8F8'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(PAD, HEADER_H - 4); ctx.lineTo(W - PAD, HEADER_H - 4); ctx.stroke();
 
-  // Info cards row
+  // ── 정보 카드 4개
+  const infoY = HEADER_H + 10;
+  const infoCardH = 96;
+  const infoW = (W - PAD * 2 - 12 * 3) / 4;
   const infos = [
-    { icon:'👥', label:'대상', value:'전 팀원 30명', sub:'팀 명단 기준' },
+    { icon:'👥', label:'대상', value:`전 팀원 ${roster.length}명`, sub:'팀 명단 기준' },
     { icon:'📅', label:'빈도', value:'월 1회', sub:'최대 2시간' },
     { icon:'💰', label:'식대', value:'1인 2만원', sub:'상한 지원' },
     { icon:'🏢', label:'출근', value:'오피스 필수', sub:'해당일 사무실 근무' },
   ];
-  const infoY = HEADER_H + 10;
-  const infoW = (W - CARD_PAD * 2 - 12 * 3) / 4;
   infos.forEach((info, i) => {
-    const ix = CARD_PAD + i * (infoW + 12);
+    const ix = PAD + i * (infoW + 12);
     ctx.fillStyle = '#EAF2FC';
-    roundRect(ctx, ix, infoY, infoW, 100, 10);
-    ctx.fill();
-    ctx.fillStyle = '#5B6472';
-    ctx.font = '11px sans-serif';
-    ctx.fillText(info.label, ix + 12, infoY + 20);
-    ctx.fillStyle = '#1A2233';
-    ctx.font = 'bold 15px sans-serif';
-    ctx.fillText(`${info.icon}  ${info.value}`, ix + 12, infoY + 50);
-    ctx.fillStyle = '#8A93A3';
-    ctx.font = '11px sans-serif';
-    ctx.fillText(info.sub, ix + 12, infoY + 68);
+    roundRect(ctx, ix, infoY, infoW, infoCardH, 10); ctx.fill();
+    ctx.fillStyle = '#5B6472'; ctx.font = '11px sans-serif';
+    ctx.fillText(info.label, ix + 12, infoY + 18);
+    ctx.fillStyle = '#1A2233'; ctx.font = 'bold 14px sans-serif';
+    ctx.fillText(`${info.icon} ${info.value}`, ix + 12, infoY + 48);
+    ctx.fillStyle = '#8A93A3'; ctx.font = '11px sans-serif';
+    ctx.fillText(info.sub, ix + 12, infoY + 66);
   });
 
-  // Principle banner
-  const pinY = infoY + 110;
+  // ── 조편성 원칙 배너
+  const pinY = infoY + infoCardH + 14;
   ctx.fillStyle = '#EAF2FC';
-  roundRect(ctx, CARD_PAD, pinY, W - CARD_PAD * 2, 30, 8);
-  ctx.fill();
-  ctx.fillStyle = '#2D7CD2';
-  ctx.font = 'bold 12px sans-serif';
-  ctx.fillText('📌  조 편성 원칙', CARD_PAD + 12, pinY + 20);
-  ctx.fillStyle = '#5B6472';
-  ctx.font = '12px sans-serif';
-  ctx.fillText('같은 팀은 조당 2명까지 · 신규 입사자와 장기근속자가 자연스럽게 섞이도록', CARD_PAD + 120, pinY + 20);
+  roundRect(ctx, PAD, pinY, W - PAD * 2, 28, 8); ctx.fill();
+  ctx.fillStyle = '#2D7CD2'; ctx.font = 'bold 11.5px sans-serif';
+  ctx.fillText('📌 조 편성 원칙', PAD + 12, pinY + 18);
+  ctx.fillStyle = '#5B6472'; ctx.font = '11.5px sans-serif';
+  ctx.fillText('같은 팀은 조당 2명까지 · 신규 입사자와 장기근속자가 자연스럽게 섞이도록', PAD + 118, pinY + 18);
 
-  // Groups section title
-  const groupsStart = HEADER_H + INFO_H + 20;
-  ctx.fillStyle = '#1A2233';
-  ctx.font = 'bold 15px sans-serif';
-  ctx.fillText('🎉 이번 달 조 편성', CARD_PAD, groupsStart);
+  // ── 그룹 섹션 타이틀
+  const gtitleY = pinY + PRIN_H;
+  ctx.fillStyle = '#1A2233'; ctx.font = 'bold 14px sans-serif';
+  ctx.fillText('🎉 이번 달 조 편성', PAD, gtitleY);
   if(dateStr){
-    ctx.fillStyle = '#2D7CD2';
-    ctx.font = '12px sans-serif';
-    ctx.fillText(`식사 기간: ${dateStr} 전후`, W - CARD_PAD - 150, groupsStart);
+    ctx.fillStyle = '#2D7CD2'; ctx.font = '12px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(`식사 기간: ${dateStr} 전후`, W - PAD, gtitleY);
+    ctx.textAlign = 'left';
   }
 
-  // Group cards
+  // ── 그룹 카드
+  const groupsY = gtitleY + 12;
   currentGroups.forEach((g, idx) => {
-    const gy = groupsStart + 14 + idx * (GROUP_H + 10);
+    const gy = groupsY + idx * (GROUP_H + GROUP_GAP);
     ctx.fillStyle = '#FFFFFF';
-    roundRect(ctx, CARD_PAD, gy, W - CARD_PAD * 2, GROUP_H, 10);
-    ctx.fill();
-    ctx.strokeStyle = '#D6E8F8';
-    ctx.lineWidth = 1;
-    roundRect(ctx, CARD_PAD, gy, W - CARD_PAD * 2, GROUP_H, 10);
-    ctx.stroke();
+    roundRect(ctx, PAD, gy, W - PAD * 2, GROUP_H, 10); ctx.fill();
+    ctx.strokeStyle = '#D6E8F8'; ctx.lineWidth = 1;
+    roundRect(ctx, PAD, gy, W - PAD * 2, GROUP_H, 10); ctx.stroke();
 
-    // Label badge
+    // 조 배지
     ctx.fillStyle = '#2D7CD2';
-    roundRect(ctx, CARD_PAD + 10, gy + 14, 36, 22, 6);
-    ctx.fill();
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 11px sans-serif';
+    roundRect(ctx, PAD + 10, gy + 15, 38, 22, 6); ctx.fill();
+    ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(labels[idx]||`G${idx+1}`, CARD_PAD + 28, gy + 29);
+    ctx.fillText(labels[idx]||`G${idx+1}`, PAD + 29, gy + 30);
     ctx.textAlign = 'left';
 
-    // Members
+    // 멤버 이름
     const members = g.map(n => `${n}(${peopleByName[n].team})`).join('  ·  ');
-    ctx.fillStyle = '#1A2233';
-    ctx.font = '13px sans-serif';
-    ctx.fillText(members, CARD_PAD + 56, gy + 30);
+    ctx.fillStyle = '#1A2233'; ctx.font = '13px sans-serif';
+    ctx.fillText(members, PAD + 58, gy + 31);
   });
 
-  // Footer
+  // ── 푸터
   const footerY = H - FOOTER_H;
   ctx.fillStyle = '#2D7CD2';
   ctx.fillRect(0, footerY, W, 3);
   ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(0, footerY + 3, W, FOOTER_H - 3);
 
-  ctx.fillStyle = '#5B6472';
-  ctx.font = '12px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('📸 식사 후 사진 한 장을 #siesta-lunch 채널에 올려주세요!', W/2, footerY + 26);
-  ctx.fillStyle = '#8A93A3';
-  ctx.font = '11px sans-serif';
-  ctx.fillText('정산: 고위드(GoWithd) → [시에스타런치] 항목으로 기록', W/2, footerY + 46);
-  ctx.fillStyle = '#2D7CD2';
-  ctx.font = 'bold 12px sans-serif';
-  ctx.fillText('빌베인 여러분 🧡', W/2, footerY + 64);
+  ctx.fillStyle = '#5B6472'; ctx.font = '12px sans-serif';
+  ctx.fillText('📸 식사 후 사진 한 장을 #siesta-lunch 채널에 올려주세요!', W/2, footerY + 24);
+  ctx.fillStyle = '#8A93A3'; ctx.font = '11px sans-serif';
+  ctx.fillText('정산: 법인카드 사용 후 고위드(gowid) → [시에스타 런치] 항목으로 기재', W/2, footerY + 44);
+  ctx.fillStyle = '#2D7CD2'; ctx.font = 'bold 13px sans-serif';
+  ctx.fillText('빌베인 여러분 🧡', W/2, footerY + 68);
   ctx.textAlign = 'left';
 
-  // Download
+  // ── 다운로드
   const link = document.createElement('a');
   link.download = `시에스타런치_${label.replace(/\s/g,'_')}.png`;
   link.href = canvas.toDataURL('image/png');
