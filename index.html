@@ -244,6 +244,10 @@
         <span style="font-size:12px;color:var(--ink-sub);" id="teamBreakdown"></span>
       </div>
       <div class="row" style="gap:8px;">
+        <div style="position:relative;">
+          <input type="text" id="rosterSearch" placeholder="🔍 이름 검색" oninput="filterRoster()" style="width:150px;padding:8px 28px 8px 10px;border-radius:8px;border:1px solid var(--line);font-size:13px;font-family:inherit;color:var(--ink);">
+          <button id="rosterSearchClear" onclick="clearSearch()" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--ink-mute);cursor:pointer;font-size:13px;padding:0;line-height:1;">✕</button>
+        </div>
         <button class="ghost" onclick="toggleRosterTable()" id="rosterToggleBtn">명단 펼치기</button>
         <button onclick="openAddPerson()">+ 인원 추가</button>
       </div>
@@ -440,12 +444,21 @@ function renderAll(){
 
   const tbody = document.getElementById('rosterBody');
   tbody.innerHTML='';
-  roster.slice().sort((a,b)=>a.team.localeCompare(b.team)).forEach((p,idx)=>{
-    const realIdx = roster.indexOf(p);
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${p.name}</td><td>${p.team}</td><td>${p.role||''}</td><td>${p.mbti||'-'}</td><td>${p.hire}</td><td>${isSenior(p.hire)?'<span class="chip senior">시니어</span>':'<span class="chip mute">주니어</span>'}</td><td><button class="ghost danger" onclick="removePerson(${realIdx})">삭제</button></td>`;
-    tbody.appendChild(tr);
-  });
+  const keyword = (document.getElementById('rosterSearch')?.value || '').trim().toLowerCase();
+  const sorted = roster.slice().sort((a,b)=>a.team.localeCompare(b.team));
+  const filtered = keyword ? sorted.filter(p => p.name.toLowerCase().includes(keyword) || p.team.toLowerCase().includes(keyword)) : sorted;
+
+  if(filtered.length === 0){
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--ink-mute);padding:18px;">'${keyword}'에 해당하는 인원이 없습니다</td></tr>`;
+  } else {
+    filtered.forEach((p)=>{
+      const realIdx = roster.indexOf(p);
+      const tr = document.createElement('tr');
+      const nameDisplay = keyword ? p.name.replace(new RegExp(keyword,'gi'), m=>`<mark style="background:#FFF3CC;border-radius:2px;">${m}</mark>`) : p.name;
+      tr.innerHTML = `<td>${nameDisplay}</td><td>${p.team}</td><td>${p.role||''}</td><td>${p.mbti||'-'}</td><td>${p.hire}</td><td>${isSenior(p.hire)?'<span class="chip senior">시니어</span>':'<span class="chip mute">주니어</span>'}</td><td><button class="ghost danger" onclick="removePerson(${realIdx})">삭제</button></td>`;
+      tbody.appendChild(tr);
+    });
+  }
 
   renderHistory();
 
@@ -453,6 +466,27 @@ function renderAll(){
     const now = new Date();
     document.getElementById('roundLabel').value = `${now.getMonth()+1}월 ${history.length%2===0?'1':'2'}차`;
   }
+}
+
+function filterRoster(){
+  const input = document.getElementById('rosterSearch');
+  const clearBtn = document.getElementById('rosterSearchClear');
+  clearBtn.style.display = input.value ? 'block' : 'none';
+  // 명단이 접혀있으면 자동으로 펼치기
+  const wrap = document.getElementById('rosterTableWrap');
+  if(input.value && wrap.style.display === 'none'){
+    wrap.style.display = 'block';
+    document.getElementById('rosterToggleBtn').textContent = '명단 접기';
+  }
+  renderAll();
+}
+
+function clearSearch(){
+  const input = document.getElementById('rosterSearch');
+  input.value = '';
+  document.getElementById('rosterSearchClear').style.display = 'none';
+  input.focus();
+  renderAll();
 }
 
 function toggleRosterTable(){
