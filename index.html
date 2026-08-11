@@ -297,6 +297,12 @@
       </div>
     </div>
     <p class="sub" style="margin-top:10px;">같은 팀은 그룹당 최대 2명까지만 섞이고, 가급적 입사 1년 이상 시니어가 각 그룹에 1명 이상 포함되도록 자동 배정됩니다.</p>
+
+    <div style="margin:12px 0 14px;padding:14px 16px;background:var(--brand-lighter);border:1px solid var(--line);border-radius:10px;">
+      <div style="font-size:12.5px;font-weight:600;color:var(--ink);margin-bottom:8px;">이번 회차 제외 인원 <span style="font-weight:400;color:var(--ink-sub);">(신혼여행·경조사 등 일시 불참자 선택)</span></div>
+      <div id="excludeChips" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+    </div>
+
     <button class="primary" onclick="runMatching()">🎲 매칭 실행</button>
     <span id="matchingLoading" class="loading-row" style="display:none;"><span class="spin"></span> 최적 조합을 계산하는 중...</span>
   </div>
@@ -466,6 +472,8 @@ function renderAll(){
 
   renderHistory();
 
+  renderExcludeChips();
+
   if(!document.getElementById('roundLabel').value){
     const now = new Date();
     document.getElementById('roundLabel').value = `${now.getMonth()+1}월 ${history.length%2===0?'1':'2'}차`;
@@ -502,7 +510,7 @@ function toggleRosterTable(){
 }
 
 function updateSizePreview(){
-  const n = roster.length;
+  const n = roster.length - excludedNames.size;
   const groups = parseInt(document.getElementById('groupCount').value || 6);
   if(groups<1){ document.getElementById('sizePreview').textContent='-'; return; }
   const base = Math.floor(n/groups);
@@ -614,12 +622,46 @@ function shuffle(arr){
   return a;
 }
 
+let excludedNames = new Set();
+
+function renderExcludeChips(){
+  const wrap = document.getElementById('excludeChips');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  roster.slice().sort((a,b)=>a.team.localeCompare(b.team)||a.name.localeCompare(b.name)).forEach(p=>{
+    const excluded = excludedNames.has(p.name);
+    const chip = document.createElement('button');
+    chip.style.cssText = `border:1.5px solid ${excluded?'#2D7CD2':'#D6E8F8'};background:${excluded?'#2D7CD2':'#fff'};color:${excluded?'#fff':'#5B6472'};border-radius:20px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s;`;
+    chip.innerHTML = excluded ? `✕ ${p.name}` : p.name;
+    chip.title = excluded ? '클릭하면 제외 취소' : '클릭하면 이번 회차 제외';
+    chip.onclick = ()=>{
+      if(excludedNames.has(p.name)) excludedNames.delete(p.name);
+      else excludedNames.add(p.name);
+      renderExcludeChips();
+      updateSizePreview();
+    };
+    wrap.appendChild(chip);
+  });
+  // 제외 인원 요약
+  if(excludedNames.size > 0){
+    const summary = document.createElement('div');
+    summary.style.cssText = 'width:100%;margin-top:8px;font-size:12px;color:#2D7CD2;';
+    summary.textContent = `${excludedNames.size}명 제외 예정 → 이번 매칭 대상: ${roster.length - excludedNames.size}명`;
+    wrap.appendChild(summary);
+    const clearBtn = document.createElement('button');
+    clearBtn.textContent = '제외 인원 전체 초기화';
+    clearBtn.style.cssText = 'margin-top:6px;font-size:11.5px;color:var(--ink-sub);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;font-family:inherit;';
+    clearBtn.onclick = ()=>{ excludedNames.clear(); renderExcludeChips(); updateSizePreview(); };
+    wrap.appendChild(clearBtn);
+  }
+}
+
 async function runMatching(){
   const loading = document.getElementById('matchingLoading');
   loading.style.display='flex';
   await new Promise(r=>setTimeout(r,30));
 
-  const names = roster.map(p=>p.name);
+  const names = roster.filter(p=>!excludedNames.has(p.name)).map(p=>p.name);
   const peopleByName = {};
   roster.forEach(p=>peopleByName[p.name]=p);
   const groupCount = Math.max(2, parseInt(document.getElementById('groupCount').value||6));
@@ -726,7 +768,7 @@ function buildAnnouncement(){
   txt += `• 정산 : 식사 후 법인카드 사용 내역을 고위드(gowid)에 [시에스타 런치]라고 기재해주세요\n`;
   txt += `• 인증 : 다 같이 찍은 사진 한 장을 #siesta-lunch 채널에 올려주세요 📸\n\n`;
   txt += `처음엔 어색해도 괜찮아요. 밥 먹으면서 나누는 이야기가 우리를 더 가깝게 만들어줄 거예요 😊\n`;
-  txt += `맛있는 시간 보내세요, 빌베인 여러분! 🧡`;
+  txt += `맛있는 시간 보내세요, 빌베인 여러분! 💙`;
 
   document.getElementById('announceText').value = txt;
   document.getElementById('announceBox').style.display='block';
@@ -879,7 +921,7 @@ function generateImage(){
   ctx.fillStyle = '#8A93A3'; ctx.font = '11px sans-serif';
   ctx.fillText('정산: 법인카드 사용 후 고위드(gowid) → [시에스타 런치] 항목으로 기재', W/2, footerY + 44);
   ctx.fillStyle = '#2D7CD2'; ctx.font = 'bold 13px sans-serif';
-  ctx.fillText('빌베인 여러분 🧡', W/2, footerY + 68);
+  ctx.fillText('빌베인 여러분 💙', W/2, footerY + 68);
   ctx.textAlign = 'left';
 
   // ── 다운로드
