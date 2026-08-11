@@ -307,8 +307,42 @@
     <span id="matchingLoading" class="loading-row" style="display:none;"><span class="spin"></span> 최적 조합을 계산하는 중...</span>
   </div>
 
+  <div class="card">
+    <h2><span class="num">2-B</span> 파일로 매칭 업로드</h2>
+    <p class="sub">이미 조 편성을 완료한 파일(CSV)이 있다면 업로드하면 공지문 생성과 이력 저장에 바로 활용할 수 있어요.</p>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;margin-bottom:14px;">
+      <div style="flex:1;min-width:240px;">
+        <div style="font-size:12px;color:var(--ink-sub);margin-bottom:6px;">📋 CSV 파일 형식 (각 행 = 한 그룹, 이름은 쉼표로 구분)</div>
+        <div style="background:#F6F8FB;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:12px;font-family:monospace;color:var(--ink);line-height:1.7;">
+          A조,정혜민,이서현,문혁은,조수민<br>
+          B조,박나영,안영주,김다은,유진수<br>
+          C조,이소현,임희선,최제혁,박소영<br>
+          <span style="color:var(--ink-mute);">※ 맨 앞 "A조" 같은 조 이름은 있어도 없어도 됩니다</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button onclick="downloadTemplate()" style="white-space:nowrap;">⬇️ 템플릿 CSV 다운로드</button>
+        <label style="cursor:pointer;">
+          <span style="display:inline-block;background:var(--brand);color:#fff;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;">📂 CSV 파일 업로드</span>
+          <input type="file" id="csvUpload" accept=".csv,text/csv" style="display:none;" onchange="handleCsvUpload(event)">
+        </label>
+      </div>
+    </div>
+
+    <div id="uploadPreview" style="display:none;">
+      <div style="font-size:12.5px;font-weight:600;color:var(--ink);margin-bottom:8px;" id="uploadPreviewTitle"></div>
+      <div id="uploadPreviewGrid" class="group-grid"></div>
+      <div class="row" style="margin-top:12px;gap:8px;">
+        <button class="primary" onclick="applyUploadedMatching()">✅ 이 매칭 적용 (결과 반영 + 이력 저장)</button>
+        <button class="ghost" onclick="cancelUpload()">취소</button>
+      </div>
+      <p id="uploadWarn" style="font-size:12px;color:var(--amber);margin:8px 0 0;display:none;"></p>
+    </div>
+  </div>
+
   <div class="card" id="resultCard" style="display:none;">
-    <h2><span class="num">3</span> 매칭 결과</h2>
+    <h2><span class="num">3</span> 매칭 결과 <span id="resultSourceBadge" style="font-size:11px;font-weight:500;color:var(--ink-sub);margin-left:6px;"></span></h2>
     <div class="score-banner" id="scoreBanner"></div>
     <div class="group-grid" id="groupGrid"></div>
     <div class="row" style="margin-top:16px;gap:8px;">
@@ -623,6 +657,109 @@ function shuffle(arr){
 }
 
 let excludedNames = new Set();
+let uploadedGroups = null;
+
+function downloadTemplate(){
+  const labels = ['A조','B조','C조','D조','E조','F조','G조','H조','I조','J조','K조','L조','M조','N조','O조'];
+  const groupCount = Math.max(2, parseInt(document.getElementById('groupCount').value||6));
+  const activeRoster = roster.filter(p=>!excludedNames.has(p.name));
+  const sizes = splitSizes(activeRoster.length, groupCount);
+  let csv = '';
+  let cursor = 0;
+  sizes.forEach((sz, i) => {
+    const members = activeRoster.slice(cursor, cursor+sz).map(p=>p.name);
+    csv += `${labels[i]||('그룹'+(i+1))},${members.join(',')}\n`;
+    cursor += sz;
+  });
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '시에스타런치_조편성_템플릿.csv';
+  a.click();
+  toast('템플릿을 다운로드했어요. 조를 수정 후 다시 업로드해주세요.');
+}
+
+function handleCsvUpload(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    let text = e.target.result.replace(/^\uFEFF/,'');
+    const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
+    const rosterNames = new Set(roster.map(p=>p.name));
+    const labels = ['A조','B조','C조','D조','E조','F조','G조','H조','I조','J조','K조','L조','M조','N조','O조'];
+    const groups = [];
+    const warnings = [];
+    lines.forEach((line, idx) => {
+      const cols = line.split(',').map(c=>c.trim()).filter(c=>c);
+      if(!cols.length) return;
+      // 첫 컬럼이 이름 명단에 없으면 레이블로 간주
+      const members = (!rosterNames.has(cols[0]) && cols.length > 1) ? cols.slice(1) : cols;
+      members.forEach(name => {
+        if(!rosterNames.has(name)) warnings.push(`"${name}"은 명단에 없는 이름입니다 (${labels[idx]||`그룹${idx+1}`})`);
+      });
+      if(members.length > 0) groups.push(members);
+    });
+    if(groups.length === 0){ toast('유효한 그룹이 없어요. 파일 형식을 확인해주세요.'); event.target.value=''; return; }
+    uploadedGroups = groups;
+    renderUploadPreview(groups, labels, warnings);
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function renderUploadPreview(groups, labels, warnings){
+  const peopleByName = {};
+  roster.forEach(p=>peopleByName[p.name]=p);
+  document.getElementById('uploadPreviewTitle').textContent =
+    `📋 업로드 미리보기 — ${groups.length}개 그룹 / 총 ${groups.reduce((s,g)=>s+g.length,0)}명`;
+  const grid = document.getElementById('uploadPreviewGrid');
+  grid.innerHTML = '';
+  groups.forEach((g, idx) => {
+    const div = document.createElement('div');
+    div.className = 'group-card';
+    const teams = [...new Set(g.map(n=>peopleByName[n]?.team||'?'))];
+    div.innerHTML = `<div class="gtitle"><span>${labels[idx]||('그룹'+(idx+1))} (${g.length}명)</span><span style="color:var(--ink-sub);font-weight:500;">${teams.length}개 팀</span></div>` +
+      g.map(n=>{ const p=peopleByName[n];
+        return `<div class="member"><span class="name">${n}</span><span class="meta">${p?p.team+' · '+(p.mbti||'-'):'⚠️ 명단 외'}</span></div>`;
+      }).join('');
+    grid.appendChild(div);
+  });
+  const warn = document.getElementById('uploadWarn');
+  if(warnings.length){ warn.textContent='⚠️ '+warnings.join(' / '); warn.style.display='block'; }
+  else { warn.style.display='none'; }
+  const preview = document.getElementById('uploadPreview');
+  preview.style.display='block';
+  preview.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+async function applyUploadedMatching(){
+  if(!uploadedGroups) return;
+  const label = document.getElementById('roundLabel').value || ('회차 '+(history.length+1));
+  const date = document.getElementById('roundDate').value || '';
+  history.push({ label, date, createdAt: new Date().toISOString(), groups: uploadedGroups, source: 'upload' });
+  await persistHistory();
+  currentGroups = uploadedGroups;
+  currentScore = {penalty:0, repeatHits:0, teamViolations:0};
+  const peopleByName = {};
+  roster.forEach(p=>peopleByName[p.name]=p);
+  document.getElementById('resultSourceBadge').textContent = '📂 파일 업로드';
+  document.getElementById('scoreBanner').innerHTML =
+    `<span><b>${currentGroups.length}개</b> 그룹 (파일 업로드)</span><span>총 <b>${currentGroups.reduce((s,g)=>s+g.length,0)}명</b> 참여</span>`;
+  document.getElementById('resultCard').style.display='block';
+  renderResult(peopleByName);
+  cancelUpload();
+  document.getElementById('roundLabel').value='';
+  document.getElementById('roundDate').value='';
+  renderAll();
+  toast(`${label} 매칭이 이력에 저장됐어요 💙`);
+  document.getElementById('resultCard').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function cancelUpload(){
+  uploadedGroups = null;
+  document.getElementById('uploadPreview').style.display='none';
+  document.getElementById('csvUpload').value='';
+}
 
 function renderExcludeChips(){
   const wrap = document.getElementById('excludeChips');
