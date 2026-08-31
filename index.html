@@ -489,7 +489,7 @@ function renderAll(){
   const tbody = document.getElementById('rosterBody');
   tbody.innerHTML='';
   const keyword = (document.getElementById('rosterSearch')?.value || '').trim().toLowerCase();
-  const sorted = roster.slice().sort((a,b)=>a.team.localeCompare(b.team));
+  const sorted = roster.slice().sort((a,b)=>a.team.localeCompare(b.team) || a.hire.localeCompare(b.hire));
   const filtered = keyword ? sorted.filter(p => p.name.toLowerCase().includes(keyword) || p.team.toLowerCase().includes(keyword)) : sorted;
 
   if(filtered.length === 0){
@@ -782,7 +782,7 @@ function renderExcludeChips(){
   const wrap = document.getElementById('excludeChips');
   if(!wrap) return;
   wrap.innerHTML = '';
-  roster.slice().sort((a,b)=>a.team.localeCompare(b.team)||a.name.localeCompare(b.name)).forEach(p=>{
+  roster.slice().sort((a,b)=>a.team.localeCompare(b.team)||a.hire.localeCompare(b.hire)).forEach(p=>{
     const excluded = excludedNames.has(p.name);
     const chip = document.createElement('button');
     chip.style.cssText = `border:1.5px solid ${excluded?'#2D7CD2':'#D6E8F8'};background:${excluded?'#2D7CD2':'#fff'};color:${excluded?'#fff':'#5B6472'};border-radius:20px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s;`;
