@@ -346,7 +346,7 @@
     <div class="score-banner" id="scoreBanner"></div>
     <div class="group-grid" id="groupGrid"></div>
     <div class="row" style="margin-top:16px;gap:8px;">
-      <button class="primary" onclick="saveRound()">이 매칭 저장 (이력에 반영)</button>
+      <button id="saveRoundBtn" class="primary" onclick="saveRound()">이 매칭 저장 (이력에 반영)</button>
       <button onclick="runMatching()">다시 섞기</button>
       <button onclick="buildAnnouncement()">공지문 생성</button>
     </div>
@@ -658,6 +658,21 @@ function shuffle(arr){
 
 let excludedNames = new Set();
 let uploadedGroups = null;
+let currentMatchingSaved = false;
+
+function updateSaveButton(){
+  const btn = document.getElementById('saveRoundBtn');
+  if(!btn) return;
+  if(currentMatchingSaved){
+    btn.textContent = '✅ 이미 이력에 저장됨';
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+  } else {
+    btn.textContent = '이 매칭 저장 (이력에 반영)';
+    btn.disabled = false;
+    btn.style.opacity = '1';
+  }
+}
 
 function downloadTemplate(){
   const labels = ['A조','B조','C조','D조','E조','F조','G조','H조','I조','J조','K조','L조','M조','N조','O조'];
@@ -738,6 +753,7 @@ async function applyUploadedMatching(){
   const date = document.getElementById('roundDate').value || '';
   history.push({ label, date, createdAt: new Date().toISOString(), groups: uploadedGroups, source: 'upload' });
   await persistHistory();
+  currentMatchingSaved = true;
   currentGroups = uploadedGroups;
   currentScore = {penalty:0, repeatHits:0, teamViolations:0};
   const peopleByName = {};
@@ -747,6 +763,7 @@ async function applyUploadedMatching(){
     `<span><b>${currentGroups.length}개</b> 그룹 (파일 업로드)</span><span>총 <b>${currentGroups.reduce((s,g)=>s+g.length,0)}명</b> 참여</span>`;
   document.getElementById('resultCard').style.display='block';
   renderResult(peopleByName);
+  updateSaveButton();
   cancelUpload();
   document.getElementById('roundLabel').value='';
   document.getElementById('roundDate').value='';
@@ -794,6 +811,7 @@ function renderExcludeChips(){
 }
 
 async function runMatching(){
+  currentMatchingSaved = false;
   const loading = document.getElementById('matchingLoading');
   loading.style.display='flex';
   await new Promise(r=>setTimeout(r,30));
@@ -860,6 +878,7 @@ function renderResult(peopleByName){
 
 async function saveRound(){
   if(!currentGroups){ toast('먼저 매칭을 실행해주세요'); return; }
+  if(currentMatchingSaved){ toast('이미 이력에 저장된 매칭이에요 💙'); return; }
   const label = document.getElementById('roundLabel').value || ('회차 '+(history.length+1));
   const date = document.getElementById('roundDate').value || '';
   history.push({
@@ -868,6 +887,8 @@ async function saveRound(){
     groups: currentGroups
   });
   await persistHistory();
+  currentMatchingSaved = true;
+  updateSaveButton();
   toast(label+' 매칭이 이력에 저장되었습니다');
   document.getElementById('roundLabel').value='';
   document.getElementById('roundDate').value='';
