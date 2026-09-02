@@ -396,6 +396,12 @@
 <script>
 const ROSTER_KEY = 'lunch-roster-v1';
 const HISTORY_KEY = 'lunch-history-v1';
+const GH_TOKEN_KEY = 'lunch-gh-token';
+const GH_OWNER = 'Lucia-lucia-2026';
+const GH_REPO = 'random-lunch';
+const GH_HISTORY_PATH = 'history.json';
+const GH_RAW_URL = `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/main/${GH_HISTORY_PATH}`;
+const GH_API_URL = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_HISTORY_PATH}`;
 
 const DEFAULT_ROSTER = [
 {name:'이지현',role:'CX',team:'Biz Team',mbti:'INTJ',hire:'2024-12-20'},
@@ -450,12 +456,21 @@ async function loadData(){
     roster = DEFAULT_ROSTER.map(p=>({...p}));
     localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
   }
+  // 이력: GitHub 공유 저장소 우선, 실패 시 로컬 fallback
   try{
-    const savedH = localStorage.getItem(HISTORY_KEY);
-    history = savedH ? JSON.parse(savedH) : [];
+    const res = await fetch(GH_RAW_URL + '?t=' + Date.now());
+    if(res.ok){
+      const data = await res.json();
+      history = Array.isArray(data.rounds) ? data.rounds : [];
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    } else { throw new Error('GitHub fetch failed'); }
   }catch(e){
-    history = [];
+    try{
+      const savedH = localStorage.getItem(HISTORY_KEY);
+      history = savedH ? JSON.parse(savedH) : [];
+    }catch(e2){ history = []; }
   }
+  updateGhTokenStatus();
   renderAll();
 }
 
@@ -464,6 +479,53 @@ async function persistRoster(){
 }
 async function persistHistory(){
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  const token = sessionStorage.getItem(GH_TOKEN_KEY);
+  if(!token){ toast('⚠️ GitHub 토큰 미설정 — 로컬에만 저장됩니다'); return; }
+  try{
+    const metaRes = await fetch(GH_API_URL, {
+      headers:{'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github+json'}
+    });
+    const payload = JSON.stringify({rounds: history}, null, 2);
+    const encoded = btoa(unescape(encodeURIComponent(payload)));
+    const body = {message:`Update history: ${new Date().toISOString()}`, content: encoded};
+    if(metaRes.ok){ const meta = await metaRes.json(); body.sha = meta.sha; }
+    const putRes = await fetch(GH_API_URL, {
+      method:'PUT',
+      headers:{'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github+json','Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    if(putRes.ok){ toast('이력이 공유 저장소에 저장됐어요 ☁️'); }
+    else { const e = await putRes.json(); throw new Error(e.message); }
+  }catch(err){
+    console.error('GitHub save failed:', err);
+    toast('⚠️ 공유 저장 실패 — 로컬에만 저장됩니다');
+  }
+}
+
+function saveGhToken(){
+  const t = document.getElementById('ghTokenInput').value.trim();
+  if(!t){ toast('토큰을 입력해주세요'); return; }
+  sessionStorage.setItem(GH_TOKEN_KEY, t);
+  document.getElementById('ghTokenInput').value='';
+  updateGhTokenStatus();
+  toast('토큰이 설정됐어요 ☁️');
+}
+function clearGhToken(){
+  sessionStorage.removeItem(GH_TOKEN_KEY);
+  updateGhTokenStatus();
+  toast('토큰이 초기화됐어요');
+}
+function updateGhTokenStatus(){
+  const el = document.getElementById('ghTokenStatus');
+  if(!el) return;
+  const token = sessionStorage.getItem(GH_TOKEN_KEY);
+  if(token){
+    el.innerHTML='✅ 토큰 설정됨 · 이력이 공유 저장소에 자동 저장됩니다';
+    el.style.color='var(--brand)';
+  } else {
+    el.innerHTML='⚠️ 토큰 미설정 · <b>읽기</b>는 공유 이력 자동 표시, <b>저장</b>은 이 브라우저에만';
+    el.style.color='var(--amber)';
+  }
 }
 
 function tenureYears(hire){
@@ -792,6 +854,29 @@ function renderExcludeChips(){
     clearBtn.onclick = ()=>{ excludedNames.clear(); renderExcludeChips(); updateSizePreview(); };
     wrap.appendChild(clearBtn);
   }
+}
+
+function ensureYunInLargeGroup(shuffled, sizes){
+  const TARGET = '윤혜준';
+  const idx = shuffled.indexOf(TARGET);
+  if(idx === -1) return shuffled;
+  const maxSize = Math.max(...sizes);
+  let cursor = 0, yunGroup = -1;
+  for(let i=0;i<sizes.length;i++){
+    if(idx >= cursor && idx < cursor+sizes[i]){ yunGroup=i; break; }
+    cursor+=sizes[i];
+  }
+  if(sizes[yunGroup]===maxSize) return shuffled;
+  cursor=0;
+  for(let i=0;i<sizes.length;i++){
+    if(sizes[i]===maxSize && i!==yunGroup){
+      const result=[...shuffled];
+      [result[idx],result[cursor]]=[result[cursor],result[idx]];
+      return result;
+    }
+    cursor+=sizes[i];
+  }
+  return shuffled;
 }
 
 async function runMatching(){
