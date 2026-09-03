@@ -1229,6 +1229,7 @@ function renderResult(peopleByName){
   if(Object.keys(violations).length){
     banner.innerHTML += `<span style="width:100%;color:var(--red);">🔴 빨간색 이름 = 아래 규칙 중 하나 이상 위반 (이름에 마우스를 올리면 사유가 보여요)</span>`;
   }
+  banner.innerHTML += `<span style="width:100%;color:var(--amber);">🟠 주황색 팀명 = 같은 조에 같은 팀이 2명 있어요 (규칙상 허용되는 범위이며 위반 아님)</span>`;
 
   const grid = document.getElementById('groupGrid');
   grid.innerHTML='';
@@ -1237,6 +1238,9 @@ function renderResult(peopleByName){
     const div = document.createElement('div');
     div.className='group-card';
     const teams = [...new Set(g.map(n=> peopleByName[n] ? peopleByName[n].team : '명단 외'))];
+    // 이 조 안에서 같은 팀이 몇 명인지 미리 계산 — 위반(3명↑)은 아니어도 2명 겹치면 참고용으로 색 표시
+    const teamCountInGroup = {};
+    g.forEach(n=>{ const p = peopleByName[n]; if(p) teamCountInGroup[p.team] = (teamCountInGroup[p.team]||0)+1; });
     div.innerHTML = `<div class="gtitle"><span>${labels[idx]||('그룹'+(idx+1))} (${g.length}명)</span><span style="color:var(--ink-sub);font-weight:500;">${teams.length}개 팀</span></div>` +
       g.map(n=>{
         const p = peopleByName[n];
@@ -1247,7 +1251,12 @@ function renderResult(peopleByName){
         const nameHtml = reasonSet
           ? `<span class="name" style="color:var(--red);" title="${[...reasonSet].join(' / ')}">${p.name} ⚠️</span>`
           : `<span class="name">${p.name}</span>`;
-        return `<div class="member">${nameHtml}<span class="meta">${p.team} · ${p.mbti||'-'}${isSenior(p.hire)?' · 시니어':''}</span></div>`;
+        // 팀이 2명 겹치는 경우(허용 범위, 위반 아님) 팀명만 주황색으로 표시해 시각적 혼동 방지
+        const teamDup = teamCountInGroup[p.team] > 1;
+        const teamHtml = teamDup
+          ? `<span style="color:var(--amber);font-weight:600;" title="같은 조에 ${p.team} 팀이 ${teamCountInGroup[p.team]}명 있어요 (규칙상 2명까지 허용됨)">${p.team}</span>`
+          : p.team;
+        return `<div class="member">${nameHtml}<span class="meta">${teamHtml} · ${p.mbti||'-'}${isSenior(p.hire)?' · 시니어':''}</span></div>`;
       }).join('');
     grid.appendChild(div);
   });
