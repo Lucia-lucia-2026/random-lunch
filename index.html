@@ -240,7 +240,7 @@
 
   <div class="card">
     <h2><span class="num">1</span> 인원 명단</h2>
-    <p class="sub">2026년 7월 1일 기준 명단입니다. 입사/퇴사 인원이 생기면 여기서 직접 추가하거나 제외할 수 있어요.</p>
+    <p class="sub" id="rosterDateNote">2026년 7월 1일 기준 명단입니다. 입사/퇴사 인원이 생기면 여기서 직접 추가하거나 제외할 수 있어요.</p>
     <div class="toolbar">
       <div class="row" style="gap:8px;">
         <span class="chip" id="rosterCountChip">-</span>
@@ -338,6 +338,7 @@
       <div id="uploadPreviewGrid" class="group-grid"></div>
       <div class="row" style="margin-top:12px;gap:8px;">
         <button class="primary" onclick="applyUploadedMatching()">✅ 이 매칭 결과 적용</button>
+        <button class="primary" style="background:var(--brand-dark);border-color:var(--brand-dark);" onclick="saveUploadedMatching()">💾 이력 저장</button>
         <button class="ghost" onclick="cancelUpload()">취소</button>
       </div>
       <p id="uploadWarn" style="font-size:12px;color:var(--amber);margin:8px 0 0;display:none;"></p>
@@ -401,6 +402,8 @@
 
 <script>
 const ROSTER_KEY = 'lunch-roster-v1';
+const ROSTER_DATE_KEY = 'lunch-roster-date-v1';
+const DEFAULT_ROSTER_DATE = '2026-07-01'; // 최초 명단 기준일. 이후 인원 추가/삭제 시 그 날짜로 자동 갱신됨
 const HISTORY_KEY = 'lunch-history-v1';
 const GH_TOKEN_KEY = 'lunch-gh-token';
 const GH_OWNER = 'Lucia-lucia-2026';
@@ -443,6 +446,7 @@ const DEFAULT_ROSTER = [
 ];
 
 let roster = [];
+let rosterBaseDate = DEFAULT_ROSTER_DATE;
 let history = [];
 let currentGroups = null;
 let currentScore = null;
@@ -461,6 +465,11 @@ async function loadData(){
   }catch(e){
     roster = DEFAULT_ROSTER.map(p=>({...p}));
     localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
+  }
+  try{
+    rosterBaseDate = localStorage.getItem(ROSTER_DATE_KEY) || DEFAULT_ROSTER_DATE;
+  }catch(e){
+    rosterBaseDate = DEFAULT_ROSTER_DATE;
   }
   // 이력: GitHub 공유 저장소 우선, 실패 시 로컬 fallback
   try{
@@ -541,7 +550,15 @@ function tenureYears(hire){
 }
 function isSenior(hire){ return tenureYears(hire) >= 1; }
 
+function updateRosterDateNote(){
+  const el = document.getElementById('rosterDateNote');
+  if(!el) return;
+  const d = new Date(rosterBaseDate);
+  el.textContent = `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 기준 명단입니다. 입사/퇴사 인원이 생기면 여기서 직접 추가하거나 제외할 수 있어요.`;
+}
+
 function renderAll(){
+  updateRosterDateNote();
   document.getElementById('statTotal').textContent = roster.length;
   const teams = [...new Set(roster.map(p=>p.team))];
   document.getElementById('statTeams').textContent = teams.length;
@@ -629,6 +646,11 @@ document.getElementById('groupCount').addEventListener('input', updateSizePrevie
 
 function openAddPerson(){ document.getElementById('addModal').classList.add('open'); }
 function closeAddPerson(){ document.getElementById('addModal').classList.remove('open'); }
+function bumpRosterDate(){
+  rosterBaseDate = new Date().toISOString().slice(0,10);
+  localStorage.setItem(ROSTER_DATE_KEY, rosterBaseDate);
+}
+
 async function addPerson(){
   const name = document.getElementById('np_name').value.trim();
   const team = document.getElementById('np_team').value.trim();
@@ -637,6 +659,7 @@ async function addPerson(){
   const hire = document.getElementById('np_hire').value;
   if(!name || !team || !hire){ toast('이름, 팀, 입사일은 필수입니다'); return; }
   roster.push({name,team,role,mbti,hire});
+  bumpRosterDate();
   await persistRoster();
   closeAddPerson();
   ['np_name','np_team','np_role','np_mbti','np_hire'].forEach(id=>document.getElementById(id).value='');
@@ -647,6 +670,7 @@ async function removePerson(idx){
   const p = roster[idx];
   if(!confirm(p.name+'님을 명단에서 삭제할까요?')) return;
   roster.splice(idx,1);
+  bumpRosterDate();
   await persistRoster();
   renderAll();
   toast('삭제되었습니다');
@@ -832,8 +856,8 @@ function renderUploadPreview(groups, labels, warnings){
 
 let currentUploadSource = null; // 파일 업로드 출처 추적
 
-async function applyUploadedMatching(){
-  if(!uploadedGroups) return;
+// 업로드된 조 편성을 결과 화면에 반영하는 공통 로직 (적용만 하는 경우 / 바로 저장하는 경우 둘 다 사용)
+function prepareUploadedResult(){
   currentGroups = uploadedGroups;
   currentUploadSource = 'upload';
   currentMatchingSaved = false;
@@ -859,7 +883,20 @@ async function applyUploadedMatching(){
   document.getElementById('resultCard').style.display='block';
   updateSaveButton();
   cancelUpload();
+}
+
+async function applyUploadedMatching(){
+  if(!uploadedGroups) return;
+  prepareUploadedResult();
   toast('매칭 결과를 확인하세요. 아래 저장 버튼을 눌러야 이력에 반영됩니다.');
+  document.getElementById('resultCard').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// 미리보기에서 바로 "이력 저장" 버튼을 눌렀을 때: 적용 + 저장을 한 번에 처리
+async function saveUploadedMatching(){
+  if(!uploadedGroups){ toast('먼저 CSV 파일을 업로드해주세요'); return; }
+  prepareUploadedResult();
+  await saveRound();
   document.getElementById('resultCard').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
