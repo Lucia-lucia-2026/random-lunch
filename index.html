@@ -253,8 +253,10 @@
         </div>
         <button class="ghost" onclick="toggleRosterTable()" id="rosterToggleBtn">명단 펼치기</button>
         <button onclick="openAddPerson()">+ 인원 추가</button>
+        <button class="ghost" onclick="syncRosterNow()" title="현재 이 브라우저의 명단을 공유 저장소에 업로드해요">☁️ 지금 동기화</button>
       </div>
     </div>
+    <p style="font-size:11.5px;color:var(--ink-mute);margin:6px 0 0;">명단 수정은 공유 저장소(GitHub 토큰 필요)에 자동 반영돼요. 예전에 이 브라우저에서만 추가/삭제했던 내용이 아직 안 보인다면 위 "☁️ 지금 동기화" 버튼을 한 번 눌러주세요.</p>
     <div id="rosterTableWrap" style="display:none;margin-top:10px;max-height:340px;overflow:auto;">
       <table>
         <thead><tr><th>이름</th><th>팀</th><th>직무</th><th>MBTI</th><th>입사일</th><th>근속</th><th></th></tr></thead>
@@ -411,6 +413,10 @@ const GH_REPO = 'random-lunch';
 const GH_HISTORY_PATH = 'history.json';
 const GH_RAW_URL = `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/main/${GH_HISTORY_PATH}`;
 const GH_API_URL = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_HISTORY_PATH}`;
+// 명단(roster)도 이력과 동일하게 공유 저장소(roster.json)에 저장해, 시크릿창/다른 브라우저에서도 같은 명단을 보게 한다
+const GH_ROSTER_PATH = 'roster.json';
+const GH_ROSTER_RAW_URL = `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/main/${GH_ROSTER_PATH}`;
+const GH_ROSTER_API_URL = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_ROSTER_PATH}`;
 
 const DEFAULT_ROSTER = [
 {name:'이지현',role:'CX',team:'Biz Team',mbti:'INTJ',hire:'2024-12-20'},
@@ -458,18 +464,28 @@ function toast(msg){
 }
 
 async function loadData(){
+  // 명단: GitHub 공유 저장소(roster.json) 우선 조회 → 실패 시 로컬 저장값 → 그마저 없으면 기본 명단
   try{
-    const saved = localStorage.getItem(ROSTER_KEY);
-    if(!saved) throw new Error('no roster yet');
-    roster = JSON.parse(saved);
+    const res = await fetch(GH_ROSTER_RAW_URL + '?t=' + Date.now());
+    if(res.ok){
+      const data = await res.json();
+      roster = Array.isArray(data.members) ? data.members : DEFAULT_ROSTER.map(p=>({...p}));
+      rosterBaseDate = data.baseDate || DEFAULT_ROSTER_DATE;
+      localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
+      localStorage.setItem(ROSTER_DATE_KEY, rosterBaseDate);
+    } else { throw new Error('GitHub roster fetch failed'); }
   }catch(e){
-    roster = DEFAULT_ROSTER.map(p=>({...p}));
-    localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
-  }
-  try{
-    rosterBaseDate = localStorage.getItem(ROSTER_DATE_KEY) || DEFAULT_ROSTER_DATE;
-  }catch(e){
-    rosterBaseDate = DEFAULT_ROSTER_DATE;
+    try{
+      const saved = localStorage.getItem(ROSTER_KEY);
+      if(!saved) throw new Error('no roster yet');
+      roster = JSON.parse(saved);
+      rosterBaseDate = localStorage.getItem(ROSTER_DATE_KEY) || DEFAULT_ROSTER_DATE;
+    }catch(e2){
+      roster = DEFAULT_ROSTER.map(p=>({...p}));
+      rosterBaseDate = DEFAULT_ROSTER_DATE;
+      localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
+      localStorage.setItem(ROSTER_DATE_KEY, rosterBaseDate);
+    }
   }
   // 이력: GitHub 공유 저장소 우선, 실패 시 로컬 fallback
   try{
@@ -491,6 +507,28 @@ async function loadData(){
 
 async function persistRoster(){
   localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
+  localStorage.setItem(ROSTER_DATE_KEY, rosterBaseDate);
+  const token = sessionStorage.getItem(GH_TOKEN_KEY);
+  if(!token){ toast('⚠️ GitHub 토큰 미설정 — 로컬에만 저장됩니다 (다른 사람에게는 안 보여요)'); return; }
+  try{
+    const metaRes = await fetch(GH_ROSTER_API_URL, {
+      headers:{'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github+json'}
+    });
+    const payload = JSON.stringify({members: roster, baseDate: rosterBaseDate}, null, 2);
+    const encoded = btoa(unescape(encodeURIComponent(payload)));
+    const body = {message:`Update roster: ${new Date().toISOString()}`, content: encoded};
+    if(metaRes.ok){ const meta = await metaRes.json(); body.sha = meta.sha; }
+    const putRes = await fetch(GH_ROSTER_API_URL, {
+      method:'PUT',
+      headers:{'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github+json','Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    if(putRes.ok){ toast('명단이 공유 저장소에 저장됐어요 ☁️'); }
+    else { const e = await putRes.json(); throw new Error(e.message); }
+  }catch(err){
+    console.error('GitHub roster save failed:', err);
+    toast('⚠️ 명단 공유 저장 실패 — 로컬에만 저장됩니다');
+  }
 }
 async function persistHistory(){
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
@@ -535,10 +573,10 @@ function updateGhTokenStatus(){
   if(!el) return;
   const token = sessionStorage.getItem(GH_TOKEN_KEY);
   if(token){
-    el.innerHTML='✅ 토큰 설정됨 · 이력이 공유 저장소에 자동 저장됩니다';
+    el.innerHTML='✅ 토큰 설정됨 · 명단·이력이 모두 공유 저장소에 자동 저장됩니다';
     el.style.color='var(--brand)';
   } else {
-    el.innerHTML='⚠️ 토큰 미설정 · <b>읽기</b>는 공유 이력 자동 표시, <b>저장</b>은 이 브라우저에만';
+    el.innerHTML='⚠️ 토큰 미설정 · <b>읽기</b>는 공유 명단/이력 자동 표시, <b>저장</b>은 이 브라우저에만';
     el.style.color='var(--amber)';
   }
 }
@@ -649,6 +687,14 @@ function closeAddPerson(){ document.getElementById('addModal').classList.remove(
 function bumpRosterDate(){
   rosterBaseDate = new Date().toISOString().slice(0,10);
   localStorage.setItem(ROSTER_DATE_KEY, rosterBaseDate);
+}
+
+// "☁️ 지금 동기화" 버튼: 이 브라우저에 저장돼있던 기존 명단을 공유 저장소에 강제로 업로드
+async function syncRosterNow(){
+  const token = sessionStorage.getItem(GH_TOKEN_KEY);
+  if(!token){ toast('⚠️ 먼저 매칭 이력 카드에서 GitHub 토큰을 설정해주세요'); return; }
+  toast('명단을 공유 저장소에 동기화하는 중...');
+  await persistRoster();
 }
 
 async function addPerson(){
