@@ -1254,7 +1254,7 @@ function renderResult(peopleByName){
         // 팀이 2명 겹치는 경우(허용 범위, 위반 아님) 팀명만 주황색으로 표시해 시각적 혼동 방지
         const teamDup = teamCountInGroup[p.team] > 1;
         const teamHtml = teamDup
-          ? `<span style="color:var(--amber);font-weight:600;" title="같은 조에 ${p.team} 팀이 ${teamCountInGroup[p.team]}명 있어요 (규칙상 2명까지 허용됨)">${p.team}</span>`
+          ? `<span style="color:var(--amber);font-weight:600;" title="같은 조에 ${p.team} 팀이 ${teamCountInGroup[p.team]}명 있어요 (규칙상 2명까지 허용됨)">${p.team} (중복 허용)</span>`
           : p.team;
         return `<div class="member">${nameHtml}<span class="meta">${teamHtml} · ${p.mbti||'-'}${isSenior(p.hire)?' · 시니어':''}</span></div>`;
       }).join('');
