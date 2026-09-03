@@ -821,7 +821,40 @@ function evaluateGroups(groups, peopleByName, recentPairs, mbtiOn){
   return {penalty, repeatHits, teamViolations, bizViolations, roleViolations};
 }
 
-// 각 규칙(팀 중복·Biz팀 밀집·동일 직무 중복·최근 재매칭) 위반에 실제로 해당하는 사람 이름과 사유를 뽑아낸다.
+// 무작위 시도(best-of-N)로 찾은 조합을, 서로 다른 조의 두 사람을 맞바꿔보며 점수를 더 낮출 수 있는지
+// 반복 탐색한다. 페널티 가중치만으로는 "400번 안에 우연히 좋은 조합이 나왔는지"에 의존하게 되는데,
+// 이 단계를 거치면 최근 이력 재매칭처럼 가중치가 아주 높은 항목을 훨씬 안정적으로 0건에 가깝게 줄일 수 있다.
+function refineGroups(groups, peopleByName, recentPairs, mbtiOn, iterations){
+  const current = groups.map(g => g.slice());
+  let currentEval = evaluateGroups(current, peopleByName, recentPairs, mbtiOn);
+  for(let iter=0; iter<iterations; iter++){
+    if(currentEval.penalty === 0) break;
+    if(current.length < 2) break;
+    const gi = Math.floor(Math.random()*current.length);
+    let gj = Math.floor(Math.random()*current.length);
+    if(gi === gj){ gj = (gj+1) % current.length; }
+    const groupA = current[gi];
+    const groupB = current[gj];
+    if(!groupA.length || !groupB.length) continue;
+    const ai = Math.floor(Math.random()*groupA.length);
+    const bi = Math.floor(Math.random()*groupB.length);
+    const nameA = groupA[ai];
+    const nameB = groupB[bi];
+    // 5인조 고정 인원은 스왑 대상에서 제외 (해당 조 구성이 깨지지 않도록)
+    if(nameA === PINNED_FIVE_PERSON || nameB === PINNED_FIVE_PERSON) continue;
+    groupA[ai] = nameB;
+    groupB[bi] = nameA;
+    const newEval = evaluateGroups(current, peopleByName, recentPairs, mbtiOn);
+    if(newEval.penalty <= currentEval.penalty){
+      currentEval = newEval; // 개선되거나 동일하면 유지
+    } else {
+      groupA[ai] = nameA; // 악화되면 되돌림
+      groupB[bi] = nameB;
+    }
+  }
+  return {groups: current, score: currentEval};
+}
+
 // 결과 화면에서 위반 대상자의 이름 색을 바꿔 보여주기 위해 사용.
 function findViolationReasons(groups, peopleByName, recentPairs){
   const reasons = {}; // name -> Set(사유 문자열)
@@ -1137,7 +1170,7 @@ async function runMatching(){
   const shufflePool = pinnedIncluded ? names.filter(n => n !== PINNED_FIVE_PERSON) : names;
 
   let best = null;
-  const TRIES = 400;
+  const TRIES = 1500; // 재매칭 회피를 더 안정적으로 찾기 위해 시도 횟수 증가 (400 → 1500)
   for(let t=0;t<TRIES;t++){
     const shuffled = shuffle(shufflePool);
     const groups = [];
@@ -1158,6 +1191,12 @@ async function runMatching(){
       best = {groups, score: ev};
     }
     if(best.score.penalty===0 && t>50) break;
+  }
+
+  // 무작위 탐색 결과를 스왑 기반으로 한 번 더 개선 — 최근 이력 재매칭(최우선 규칙)을 특히 안정적으로 줄여준다
+  const refined = refineGroups(best.groups, peopleByName, recentPairs, mbtiOn, 2000);
+  if(refined.score.penalty <= best.score.penalty){
+    best = refined;
   }
 
   currentGroups = best.groups;
