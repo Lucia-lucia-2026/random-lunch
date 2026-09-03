@@ -1053,8 +1053,12 @@ async function runMatching(){
 
   currentGroups = best.groups;
   currentScore = best.score;
+  currentMatchingSaved = false; // 새로 섞은 조합이므로 저장 여부를 초기화
+  currentUploadSource = null;   // 자동 매칭 결과이므로 업로드 출처 표시 제거
   loading.style.display='none';
+  document.getElementById('resultSourceBadge').textContent = '';
   renderResult(peopleByName);
+  updateSaveButton();
 }
 
 function renderResult(peopleByName){
