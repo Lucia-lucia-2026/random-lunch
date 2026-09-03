@@ -301,7 +301,7 @@
         </select>
       </div>
     </div>
-    <p class="sub" style="margin-top:10px;">같은 팀은 그룹당 최대 2명까지만 섞이고, 가급적 입사 1년 이상 시니어가 각 그룹에 1명 이상 포함되도록 자동 배정됩니다.<br>Biz Team은 가급적 서로 다른 조로 분산 배정되며, 같은 팀 내 동일 직무(Role)를 가진 인원도 가급적 다른 조로 나뉘어 배정됩니다.</p>
+    <p class="sub" style="margin-top:10px;">같은 팀은 그룹당 최대 2명까지만 섞이고, 가급적 입사 1년 이상 시니어가 각 그룹에 1명 이상 포함되도록 자동 배정됩니다.<br>Biz Team은 가급적 서로 다른 조로 분산 배정되며, 같은 팀 내 동일 직무(Role)를 가진 인원도 가급적 다른 조로 나뉘어 배정됩니다.<br><b>최우선 규칙: 최근 이력에서 이미 만난 조합은 가능한 한 0건이 되도록 다른 규칙보다 우선 적용됩니다.</b></p>
 
     <div style="margin:12px 0 14px;padding:14px 16px;background:var(--brand-lighter);border:1px solid var(--line);border-radius:10px;">
       <div style="font-size:12.5px;font-weight:600;color:var(--ink);margin-bottom:8px;">이번 회차 제외 인원 <span style="font-weight:400;color:var(--ink-sub);">(신혼여행·경조사 등 일시 불참자 선택)</span></div>
@@ -617,9 +617,9 @@ function renderAll(){
   roster.forEach(p=>{teamCounts[p.team]=(teamCounts[p.team]||0)+1;});
   document.getElementById('teamBreakdown').textContent = Object.entries(teamCounts).map(([t,c])=>`${t} ${c}`).join(' · ');
 
-  const defaultGroups = Math.max(2, Math.round(roster.length / 4.5));
+  const DEFAULT_GROUP_COUNT = 6; // 매칭 실행 시 그룹 수 기본값
   const gc = document.getElementById('groupCount');
-  if(!gc.value) gc.value = defaultGroups;
+  if(!gc.value) gc.value = DEFAULT_GROUP_COUNT;
   updateSizePreview();
 
   const tbody = document.getElementById('rosterBody');
@@ -788,7 +788,7 @@ function evaluateGroups(groups, peopleByName, recentPairs, mbtiOn){
         const pj = peopleByName[g[j]];
         if(!pj) continue;
         const key = [g[i],g[j]].sort().join('|');
-        if(recentPairs.has(key)){ penalty += 100; repeatHits++; }
+        if(recentPairs.has(key)){ penalty += 1000; repeatHits++; } // 최우선 규칙: 최근 이력 재매칭은 다른 규칙보다 훨씬 강하게 페널티
         if(mbtiOn && pi.mbti && pj.mbti){
           mbtiPairScore += mbtiDistance(pi.mbti,pj.mbti);
           mbtiPairs++;
