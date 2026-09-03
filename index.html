@@ -876,7 +876,7 @@ function findViolationReasons(groups, peopleByName, recentPairs){
         (teamRoleMembers[rk] = teamRoleMembers[rk] || []).push(n);
       }
     });
-    // 같은 팀 3명 이상(허용 최대 2명 초과)
+    // 같은 팀 3명 이상(허용 최대 2명 초과)만 표시 — 2명은 허용된 범위라 표시하지 않음
     Object.entries(teamMembers).forEach(([team, names])=>{
       if(names.length > 2) names.forEach(n=>addReason(n, `같은 팀(${team}) ${names.length}명 밀집`));
     });
