@@ -1,0 +1,215 @@
+{
+  "members": [
+    {
+      "name": "이지현",
+      "role": "CX",
+      "team": "Biz Team",
+      "mbti": "INTJ",
+      "hire": "2024-12-20"
+    },
+    {
+      "name": "정채영",
+      "role": "Finance",
+      "team": "Biz Team",
+      "mbti": "INFJ",
+      "hire": "2024-10-25"
+    },
+    {
+      "name": "정혜민",
+      "role": "HR",
+      "team": "Biz Team",
+      "mbti": "ISFJ",
+      "hire": "2021-10-18"
+    },
+    {
+      "name": "박나영",
+      "role": "Marketer",
+      "team": "Brand",
+      "mbti": "ISTP",
+      "hire": "2026-01-26"
+    },
+    {
+      "name": "안선우",
+      "role": "Designer",
+      "team": "Brand",
+      "mbti": "INFP",
+      "hire": "2024-07-29"
+    },
+    {
+      "name": "이서현",
+      "role": "MD",
+      "team": "Brand",
+      "mbti": "ENTJ",
+      "hire": "2025-03-06"
+    },
+    {
+      "name": "이우리",
+      "role": "Marketer",
+      "team": "Brand",
+      "mbti": "ENTP",
+      "hire": "2025-05-08"
+    },
+    {
+      "name": "임희진",
+      "role": "MD",
+      "team": "Brand",
+      "mbti": "ESFP",
+      "hire": "2025-01-26"
+    },
+    {
+      "name": "이종민",
+      "role": "MD",
+      "team": "Brand",
+      "mbti": "ISTJ",
+      "hire": "2026-03-03"
+    },
+    {
+      "name": "이혜진",
+      "role": "CX",
+      "team": "Brand",
+      "mbti": "ESTP",
+      "hire": "2026-05-27"
+    },
+    {
+      "name": "김유리",
+      "role": "AMD",
+      "team": "Commerce",
+      "mbti": "INFJ",
+      "hire": "2025-11-26"
+    },
+    {
+      "name": "김태윤",
+      "role": "MD",
+      "team": "Commerce",
+      "mbti": "INFP",
+      "hire": "2025-09-17"
+    },
+    {
+      "name": "이소현",
+      "role": "MD",
+      "team": "Commerce",
+      "mbti": "ISFJ",
+      "hire": "2023-03-13"
+    },
+    {
+      "name": "조수민",
+      "role": "MD",
+      "team": "Commerce",
+      "mbti": "INTJ",
+      "hire": "2020-12-18"
+    },
+    {
+      "name": "박소영",
+      "role": "Marketer",
+      "team": "M&E",
+      "mbti": "",
+      "hire": "2019-08-12"
+    },
+    {
+      "name": "박고은",
+      "role": "Marketer",
+      "team": "M&E",
+      "mbti": "ENFP",
+      "hire": "2025-06-04"
+    },
+    {
+      "name": "김영웅",
+      "role": "Ad Sales Manager",
+      "team": "M&E",
+      "mbti": "",
+      "hire": "2026-07-01"
+    },
+    {
+      "name": "이혜린",
+      "role": "Designer",
+      "team": "M&E",
+      "mbti": "INTJ",
+      "hire": "2026-03-18"
+    },
+    {
+      "name": "이상화",
+      "role": "Support",
+      "team": "M&E",
+      "mbti": "",
+      "hire": "2026-06-22"
+    },
+    {
+      "name": "안영주",
+      "role": "UX Designer",
+      "team": "Product",
+      "mbti": "INFP",
+      "hire": "2025-11-17"
+    },
+    {
+      "name": "김다은",
+      "role": "Engineer",
+      "team": "Product",
+      "mbti": "ENFP",
+      "hire": "2022-01-10"
+    },
+    {
+      "name": "문혁은",
+      "role": "Engineer",
+      "team": "Product",
+      "mbti": "INTP",
+      "hire": "2020-12-18"
+    },
+    {
+      "name": "유진수",
+      "role": "Engineer",
+      "team": "Product",
+      "mbti": "ESTJ",
+      "hire": "2025-02-17"
+    },
+    {
+      "name": "임소정",
+      "role": "Engineer",
+      "team": "Product",
+      "mbti": "ISFP",
+      "hire": "2024-01-29"
+    },
+    {
+      "name": "정수형",
+      "role": "Engineer",
+      "team": "Product",
+      "mbti": "ESTP",
+      "hire": "2023-12-04"
+    },
+    {
+      "name": "최제혁",
+      "role": "Engineer",
+      "team": "Product",
+      "mbti": "INFP",
+      "hire": "2021-11-08"
+    },
+    {
+      "name": "윤혜준",
+      "role": "Staff - QA",
+      "team": "Product",
+      "mbti": "ENFP",
+      "hire": "2024-12-01"
+    },
+    {
+      "name": "안연주",
+      "role": "Marketer",
+      "team": "GA",
+      "mbti": "ENFP",
+      "hire": "2026-04-20"
+    },
+    {
+      "name": "채지민",
+      "team": "Commerce",
+      "role": "AMD",
+      "mbti": "ESTJ",
+      "hire": "2026-08-26"
+    },
+    {
+      "name": "정겨운",
+      "team": "경영",
+      "role": "CSO",
+      "mbti": "",
+      "hire": "2026-09-07"
+    }
+  ],
+  "baseDate": "2026-09-03"
+}
