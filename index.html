@@ -821,6 +821,55 @@ function evaluateGroups(groups, peopleByName, recentPairs, mbtiOn){
   return {penalty, repeatHits, teamViolations, bizViolations, roleViolations};
 }
 
+// 각 규칙(팀 중복·Biz팀 밀집·동일 직무 중복·최근 재매칭) 위반에 실제로 해당하는 사람 이름과 사유를 뽑아낸다.
+// 결과 화면에서 위반 대상자의 이름 색을 바꿔 보여주기 위해 사용.
+function findViolationReasons(groups, peopleByName, recentPairs){
+  const reasons = {}; // name -> Set(사유 문자열)
+  const addReason = (name, reason)=>{
+    if(!reasons[name]) reasons[name] = new Set();
+    reasons[name].add(reason);
+  };
+  groups.forEach(g=>{
+    const teamMembers = {};     // 팀 -> [이름]
+    const teamRoleMembers = {}; // '팀|직무' -> [이름]
+    const bizMembers = [];
+    g.forEach(n=>{
+      const p = peopleByName[n];
+      if(!p) return;
+      (teamMembers[p.team] = teamMembers[p.team] || []).push(n);
+      if(p.team === BIZ_TEAM_NAME) bizMembers.push(n);
+      if(p.role){
+        const rk = p.team+'|'+p.role;
+        (teamRoleMembers[rk] = teamRoleMembers[rk] || []).push(n);
+      }
+    });
+    // 같은 팀 3명 이상(허용 최대 2명 초과)
+    Object.entries(teamMembers).forEach(([team, names])=>{
+      if(names.length > 2) names.forEach(n=>addReason(n, `같은 팀(${team}) ${names.length}명 밀집`));
+    });
+    // Biz Team 밀집(2명 이상)
+    if(bizMembers.length > 1) bizMembers.forEach(n=>addReason(n, 'Biz Team 밀집'));
+    // 같은 팀 내 동일 직무 중복
+    Object.entries(teamRoleMembers).forEach(([rk, names])=>{
+      if(names.length > 1){
+        const [team, role] = rk.split('|');
+        names.forEach(n=>addReason(n, `동일 직무 중복 (${team} ${role})`));
+      }
+    });
+    // 최근 회차와 재매칭된 쌍
+    for(let i=0;i<g.length;i++){
+      for(let j=i+1;j<g.length;j++){
+        const key = [g[i],g[j]].sort().join('|');
+        if(recentPairs.has(key)){
+          addReason(g[i], `최근 이력 재매칭 (${g[j]})`);
+          addReason(g[j], `최근 이력 재매칭 (${g[i]})`);
+        }
+      }
+    }
+  });
+  return reasons;
+}
+
 function splitSizes(n, groups){
   const base = Math.floor(n/groups);
   const rem = n - base*groups;
@@ -1125,6 +1174,11 @@ function renderResult(peopleByName){
   document.getElementById('resultCard').style.display='block';
   document.getElementById('announceBox').style.display='none';
 
+  // 결과 배너와 같은 기준(재매칭 제외 기간)으로 위반 대상자를 뽑아 이름 색으로 표시한다
+  const cooldown = parseInt(document.getElementById('cooldownRounds').value);
+  const recentPairs = recentPairSet(cooldown);
+  const violations = findViolationReasons(currentGroups, peopleByName, recentPairs);
+
   const banner = document.getElementById('scoreBanner');
   banner.innerHTML = `
     <span><b>${currentGroups.length}개</b> 그룹 편성</span>
@@ -1133,6 +1187,9 @@ function renderResult(peopleByName){
     <span>동일 직무 중복 <b>${currentScore.roleViolations||0}건</b></span>
     <span>최근 이력 재매칭 <b>${currentScore.repeatHits}건</b></span>
   `;
+  if(Object.keys(violations).length){
+    banner.innerHTML += `<span style="width:100%;color:var(--red);">🔴 빨간색 이름 = 아래 규칙 중 하나 이상 위반 (이름에 마우스를 올리면 사유가 보여요)</span>`;
+  }
 
   const grid = document.getElementById('groupGrid');
   grid.innerHTML='';
@@ -1147,7 +1204,11 @@ function renderResult(peopleByName){
         if(!p){
           return `<div class="member"><span class="name">${n}</span><span class="meta" style="color:var(--red);">⚠️ 명단 외</span></div>`;
         }
-        return `<div class="member"><span class="name">${p.name}</span><span class="meta">${p.team} · ${p.mbti||'-'}${isSenior(p.hire)?' · 시니어':''}</span></div>`;
+        const reasonSet = violations[n];
+        const nameHtml = reasonSet
+          ? `<span class="name" style="color:var(--red);" title="${[...reasonSet].join(' / ')}">${p.name} ⚠️</span>`
+          : `<span class="name">${p.name}</span>`;
+        return `<div class="member">${nameHtml}<span class="meta">${p.team} · ${p.mbti||'-'}${isSenior(p.hire)?' · 시니어':''}</span></div>`;
       }).join('');
     grid.appendChild(div);
   });
