@@ -716,6 +716,7 @@ function evaluateGroups(groups, peopleByName, recentPairs, mbtiOn){
     let bizCount = 0;
     for(let i=0;i<g.length;i++){
       const pi = peopleByName[g[i]];
+      if(!pi) continue; // 명단에 없는 이름(업로드 CSV 오타 등)은 점수 계산에서 제외
       teamCount[pi.team] = (teamCount[pi.team]||0)+1;
       if(pi.team === BIZ_TEAM_NAME) bizCount++;
       if(pi.role){
@@ -725,6 +726,7 @@ function evaluateGroups(groups, peopleByName, recentPairs, mbtiOn){
       if(isSenior(pi.hire)) seniorCount++;
       for(let j=i+1;j<g.length;j++){
         const pj = peopleByName[g[j]];
+        if(!pj) continue;
         const key = [g[i],g[j]].sort().join('|');
         if(recentPairs.has(key)){ penalty += 100; repeatHits++; }
         if(mbtiOn && pi.mbti && pj.mbti){
@@ -1074,10 +1076,13 @@ function renderResult(peopleByName){
   currentGroups.forEach((g, idx)=>{
     const div = document.createElement('div');
     div.className='group-card';
-    const teams = [...new Set(g.map(n=>peopleByName[n].team))];
+    const teams = [...new Set(g.map(n=> peopleByName[n] ? peopleByName[n].team : '명단 외'))];
     div.innerHTML = `<div class="gtitle"><span>${labels[idx]||('그룹'+(idx+1))} (${g.length}명)</span><span style="color:var(--ink-sub);font-weight:500;">${teams.length}개 팀</span></div>` +
       g.map(n=>{
         const p = peopleByName[n];
+        if(!p){
+          return `<div class="member"><span class="name">${n}</span><span class="meta" style="color:var(--red);">⚠️ 명단 외</span></div>`;
+        }
         return `<div class="member"><span class="name">${p.name}</span><span class="meta">${p.team} · ${p.mbti||'-'}${isSenior(p.hire)?' · 시니어':''}</span></div>`;
       }).join('');
     grid.appendChild(div);
@@ -1139,7 +1144,7 @@ function buildAnnouncement(){
   txt += `밥 한 끼 나누는 시간 — 시에스타런치 🍽️\n\n`;
   txt += `📋 이번 조 편성\n\n`;
   currentGroups.forEach((g,idx)=>{
-    const members = g.map(n=>`${n}(${peopleByName[n].team})`).join(' · ');
+    const members = g.map(n=>`${n}(${peopleByName[n]?peopleByName[n].team:'명단 외'})`).join(' · ');
     txt += `${labels[idx]||('그룹'+(idx+1))}: ${members}\n`;
   });
   txt += `\n📌 안내사항\n`;
@@ -1285,7 +1290,7 @@ function generateImage(){
     ctx.textAlign = 'left';
 
     // 멤버 이름
-    const members = g.map(n => `${n}(${peopleByName[n].team})`).join('  ·  ');
+    const members = g.map(n => `${n}(${peopleByName[n]?peopleByName[n].team:'명단 외'})`).join('  ·  ');
     ctx.fillStyle = '#1A2233'; ctx.font = '13px sans-serif';
     ctx.fillText(members, PAD + 58, gy + 31);
   });
