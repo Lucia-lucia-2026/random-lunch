@@ -1229,7 +1229,7 @@ function renderResult(peopleByName){
   if(Object.keys(violations).length){
     banner.innerHTML += `<span style="width:100%;color:var(--red);">🔴 빨간색 이름 = 아래 규칙 중 하나 이상 위반 (이름에 마우스를 올리면 사유가 보여요)</span>`;
   }
-  banner.innerHTML += `<span style="width:100%;color:var(--amber);">🟠 주황색 팀명 = 같은 조에 같은 팀이 2명 있어요 (규칙상 허용되는 범위이며 위반 아님)</span>`;
+  banner.innerHTML += `<span style="width:100%;color:var(--amber);line-height:1.6;">🟠 주황색 "팀명 (중복 허용)" 표시 안내: 매칭은 원칙적으로 서로 다른 팀 사람들을 섞어주지만, 인원 구성상 완전히 겹치지 않게 나누기 어려운 경우 같은 팀이 한 조에 최대 2명까지는 자동으로 허용됩니다. 즉 오류나 실수가 아니라 정상적으로 허용된 조합이니 안심하고 그대로 진행하셔도 돼요. (같은 팀이 3명 이상 모이면 그때는 실제 위반으로 간주해 이름이 빨간색으로 표시됩니다)</span>`;
 
   const grid = document.getElementById('groupGrid');
   grid.innerHTML='';
