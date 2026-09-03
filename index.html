@@ -460,7 +460,9 @@ let currentScore = null;
 function toast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2200);
+  const isWarning = msg.includes('⚠️');
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(()=>t.classList.remove('show'), isWarning ? 5000 : 2200);
 }
 
 async function loadData(){
@@ -509,7 +511,7 @@ async function persistRoster(){
   localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
   localStorage.setItem(ROSTER_DATE_KEY, rosterBaseDate);
   const token = sessionStorage.getItem(GH_TOKEN_KEY);
-  if(!token){ toast('⚠️ GitHub 토큰 미설정 — 로컬에만 저장됩니다 (다른 사람에게는 안 보여요)'); return; }
+  if(!token){ return {ok:false, warn:'GitHub 토큰 미설정 — 로컬에만 저장됩니다 (다른 사람에게는 안 보여요)'}; }
   try{
     const metaRes = await fetch(GH_ROSTER_API_URL, {
       headers:{'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github+json'}
@@ -518,22 +520,26 @@ async function persistRoster(){
     const encoded = btoa(unescape(encodeURIComponent(payload)));
     const body = {message:`Update roster: ${new Date().toISOString()}`, content: encoded};
     if(metaRes.ok){ const meta = await metaRes.json(); body.sha = meta.sha; }
+    else if(metaRes.status !== 404){
+      const metaErr = await metaRes.json().catch(()=>({}));
+      throw new Error(`파일 조회 실패 (HTTP ${metaRes.status}): ${metaErr.message||'알 수 없는 오류'}`);
+    }
     const putRes = await fetch(GH_ROSTER_API_URL, {
       method:'PUT',
       headers:{'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github+json','Content-Type':'application/json'},
       body: JSON.stringify(body)
     });
-    if(putRes.ok){ toast('명단이 공유 저장소에 저장됐어요 ☁️'); }
-    else { const e = await putRes.json(); throw new Error(e.message); }
+    if(putRes.ok){ return {ok:true}; }
+    else { const e = await putRes.json().catch(()=>({})); throw new Error(`HTTP ${putRes.status}: ${e.message||'알 수 없는 오류'}`); }
   }catch(err){
     console.error('GitHub roster save failed:', err);
-    toast('⚠️ 명단 공유 저장 실패 — 로컬에만 저장됩니다');
+    return {ok:false, warn:'명단 공유 저장 실패 (' + (err.message||'네트워크 오류') + ') — 로컬에만 저장됩니다'};
   }
 }
 async function persistHistory(){
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
   const token = sessionStorage.getItem(GH_TOKEN_KEY);
-  if(!token){ toast('⚠️ GitHub 토큰 미설정 — 로컬에만 저장됩니다'); return; }
+  if(!token){ return {ok:false, warn:'GitHub 토큰 미설정 — 로컬에만 저장됩니다'}; }
   try{
     const metaRes = await fetch(GH_API_URL, {
       headers:{'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github+json'}
@@ -542,16 +548,20 @@ async function persistHistory(){
     const encoded = btoa(unescape(encodeURIComponent(payload)));
     const body = {message:`Update history: ${new Date().toISOString()}`, content: encoded};
     if(metaRes.ok){ const meta = await metaRes.json(); body.sha = meta.sha; }
+    else if(metaRes.status !== 404){
+      const metaErr = await metaRes.json().catch(()=>({}));
+      throw new Error(`파일 조회 실패 (HTTP ${metaRes.status}): ${metaErr.message||'알 수 없는 오류'}`);
+    }
     const putRes = await fetch(GH_API_URL, {
       method:'PUT',
       headers:{'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github+json','Content-Type':'application/json'},
       body: JSON.stringify(body)
     });
-    if(putRes.ok){ toast('이력이 공유 저장소에 저장됐어요 ☁️'); }
-    else { const e = await putRes.json(); throw new Error(e.message); }
+    if(putRes.ok){ return {ok:true}; }
+    else { const e = await putRes.json().catch(()=>({})); throw new Error(`HTTP ${putRes.status}: ${e.message||'알 수 없는 오류'}`); }
   }catch(err){
     console.error('GitHub save failed:', err);
-    toast('⚠️ 공유 저장 실패 — 로컬에만 저장됩니다');
+    return {ok:false, warn:'공유 저장 실패 (' + (err.message||'네트워크 오류') + ') — 로컬에만 저장됩니다'};
   }
 }
 
@@ -694,7 +704,9 @@ async function syncRosterNow(){
   const token = sessionStorage.getItem(GH_TOKEN_KEY);
   if(!token){ toast('⚠️ 먼저 매칭 이력 카드에서 GitHub 토큰을 설정해주세요'); return; }
   toast('명단을 공유 저장소에 동기화하는 중...');
-  await persistRoster();
+  const result = await persistRoster();
+  if(result && result.ok){ toast('명단이 공유 저장소에 저장됐어요 ☁️'); }
+  else { toast('⚠️ ' + (result ? result.warn : '동기화 실패')); }
 }
 
 async function addPerson(){
@@ -706,20 +718,22 @@ async function addPerson(){
   if(!name || !team || !hire){ toast('이름, 팀, 입사일은 필수입니다'); return; }
   roster.push({name,team,role,mbti,hire});
   bumpRosterDate();
-  await persistRoster();
+  const result = await persistRoster();
   closeAddPerson();
   ['np_name','np_team','np_role','np_mbti','np_hire'].forEach(id=>document.getElementById(id).value='');
   renderAll();
-  toast(name+'님이 명단에 추가되었습니다');
+  if(result && !result.ok){ toast(name+'님이 추가됐지만 ⚠️ ' + result.warn); }
+  else { toast(name+'님이 명단에 추가되었습니다'); }
 }
 async function removePerson(idx){
   const p = roster[idx];
   if(!confirm(p.name+'님을 명단에서 삭제할까요?')) return;
   roster.splice(idx,1);
   bumpRosterDate();
-  await persistRoster();
+  const result = await persistRoster();
   renderAll();
-  toast('삭제되었습니다');
+  if(result && !result.ok){ toast('삭제됐지만 ⚠️ ' + result.warn); }
+  else { toast('삭제되었습니다'); }
 }
 
 function recentPairSet(cooldown){
@@ -1164,11 +1178,12 @@ async function saveRound(){
   const round = { label, date, createdAt: new Date().toISOString(), groups: currentGroups };
   if(currentUploadSource) round.source = currentUploadSource;
   history.push(round);
-  await persistHistory();
+  const result = await persistHistory();
   currentMatchingSaved = true;
   currentUploadSource = null;
   updateSaveButton();
-  toast(label+' 매칭이 이력에 저장됐어요 💙');
+  if(result && !result.ok){ toast(label+' 매칭이 저장됐지만 ⚠️ ' + result.warn); }
+  else { toast(label+' 매칭이 이력에 저장됐어요 💙'); }
   document.getElementById('roundLabel').value='';
   document.getElementById('roundDate').value='';
   renderAll();
@@ -1429,9 +1444,10 @@ function toggleHistory(ri){
 async function deleteRound(idx){
   if(!confirm('이 회차 기록을 삭제할까요? 삭제하면 다음 매칭 시 중복 방지에 반영되지 않습니다.')) return;
   history.splice(idx,1);
-  await persistHistory();
+  const result = await persistHistory();
   renderAll();
-  toast('회차 기록이 삭제되었습니다');
+  if(result && !result.ok){ toast('삭제됐지만 ⚠️ ' + result.warn); }
+  else { toast('회차 기록이 삭제되었습니다'); }
 }
 
 const PW_KEY = 'lunch-admin-pw-hash';
