@@ -355,6 +355,7 @@
       <button id="saveRoundBtn" class="primary" onclick="saveRound()">이 매칭 저장 (이력에 반영)</button>
       <button onclick="runMatching()">다시 섞기</button>
       <button onclick="buildAnnouncement()">공지문 생성</button>
+      <button class="ghost" onclick="downloadCurrentResultCsv()" title="1~2명만 이름을 바꿔서 다시 업로드하면 미세 조정할 수 있어요">⬇️ 결과 CSV 다운로드</button>
     </div>
     <div id="announceBox" style="display:none;margin-top:14px;">
       <div class="row" style="justify-content:space-between;margin-bottom:6px;">
@@ -970,6 +971,24 @@ function downloadTemplate(){
   a.download = '시에스타런치_조편성_템플릿.csv';
   a.click();
   toast('템플릿을 다운로드했어요. 조를 수정 후 다시 업로드해주세요.');
+}
+
+// 현재 매칭 결과를 CSV로 다운로드 — 1~2명만 이름을 바꿔서 "파일로 매칭 업로드"에 다시 올리면
+// 자동 매칭 결과를 그대로 살리면서 미세 조정만 할 수 있다.
+function downloadCurrentResultCsv(){
+  if(!currentGroups || !currentGroups.length){ toast('먼저 매칭을 실행하거나 파일을 업로드해주세요'); return; }
+  const labels = ['A조','B조','C조','D조','E조','F조','G조','H조','I조','J조','K조','L조','M조','N조','O조'];
+  let csv = '';
+  currentGroups.forEach((g, i) => {
+    csv += `${labels[i]||('그룹'+(i+1))},${g.join(',')}\n`;
+  });
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const dateStr = new Date().toISOString().slice(0,10);
+  a.download = `시에스타런치_매칭결과_${dateStr}.csv`;
+  a.click();
+  toast('현재 매칭 결과를 다운로드했어요. 이름을 수정한 뒤 "파일로 매칭 업로드"에 다시 올려주세요.');
 }
 
 function handleCsvUpload(event){
