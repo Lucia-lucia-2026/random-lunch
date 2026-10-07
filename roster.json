@@ -209,6 +209,13 @@
       "role": "MD",
       "mbti": "ESFP",
       "hire": "2025-01-26"
+    },
+    {
+      "name": "리디아",
+      "team": "Commerce",
+      "role": "AMD",
+      "mbti": "ESTJ",
+      "hire": "2026-08-26"
     }
   ],
   "baseDate": "2026-10-07"
