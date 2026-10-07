@@ -209,6 +209,13 @@
       "role": "Marketer",
       "mbti": "",
       "hire": "2019-08-12"
+    },
+    {
+      "name": "고니",
+      "team": "M&E",
+      "role": "Marketer",
+      "mbti": "ENFP",
+      "hire": "2025-06-04"
     }
   ],
   "baseDate": "2026-10-07"
