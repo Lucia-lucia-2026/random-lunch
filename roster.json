@@ -78,13 +78,6 @@
       "hire": "2025-11-26"
     },
     {
-      "name": "김태윤",
-      "role": "MD",
-      "team": "Commerce",
-      "mbti": "INFP",
-      "hire": "2025-09-17"
-    },
-    {
       "name": "이소현",
       "role": "MD",
       "team": "Commerce",
@@ -202,7 +195,14 @@
       "role": "CSO",
       "mbti": "",
       "hire": "2026-09-07"
+    },
+    {
+      "name": "최지민",
+      "team": "Commerce",
+      "role": "MD",
+      "mbti": "",
+      "hire": "2024-04-29"
     }
   ],
-  "baseDate": "2026-09-03"
+  "baseDate": "2026-10-07"
 }
