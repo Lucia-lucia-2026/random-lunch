@@ -209,6 +209,13 @@
       "role": "AMD",
       "mbti": "ESTJ",
       "hire": "2026-08-26"
+    },
+    {
+      "name": "폴샤",
+      "team": "M&E",
+      "role": "Marketer",
+      "mbti": "",
+      "hire": "2019-08-12"
     }
   ],
   "baseDate": "2026-10-07"
