@@ -209,6 +209,13 @@
       "role": "Marketer",
       "mbti": "ENFP",
       "hire": "2025-06-04"
+    },
+    {
+      "name": "린",
+      "team": "Brand",
+      "role": "Designer",
+      "mbti": "",
+      "hire": "2026-10-22"
     }
   ],
   "baseDate": "2026-10-07"
